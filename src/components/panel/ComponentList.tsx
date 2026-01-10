@@ -111,7 +111,16 @@ export function ComponentList() {
             maxHeight,
           });
 
-          console.log('Image object created:', imageObj);
+          console.log('Image object created:', {
+            left: imageObj.left,
+            top: imageObj.top,
+            width: imageObj.width,
+            height: imageObj.height,
+            scaleX: imageObj.scaleX,
+            scaleY: imageObj.scaleY,
+            originX: imageObj.originX,
+            originY: imageObj.originY
+          });
 
           canvasRef.current!.add(imageObj);
           canvasRef.current!.setActiveObject(imageObj);

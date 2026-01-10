@@ -43,12 +43,14 @@ export async function createImageObject(props: Partial<ImageObjectProps> & { max
 
   const maxWidth = props.maxWidth || 400;
   const maxHeight = props.maxHeight || 300;
+  const targetX = props.x || 100;
+  const targetY = props.y || 100;
 
   try {
     // Fabric.js v7 使用 Promise API
     const image = await Image.fromURL(props.src, {
-      left: props.x || 100,
-      top: props.y || 100,
+      left: targetX,
+      top: targetY,
       opacity: props.opacity !== undefined ? props.opacity : 1,
       originX: 'center',
       originY: 'center',
@@ -63,9 +65,21 @@ export async function createImageObject(props: Partial<ImageObjectProps> & { max
     // 计算缩放比例
     const scaleX = maxWidth / imgWidth;
     const scaleY = maxHeight / imgHeight;
-    const scale = Math.min(scaleX, scaleY, 1); // 不放大，只缩小
 
-    image.scale(scale);
+    // 使用scaleToWidth或scaleToHeight来缩放，保持宽高比
+    if (imgWidth > maxWidth || imgHeight > maxHeight) {
+      if (scaleX < scaleY) {
+        image.scaleToWidth(maxWidth);
+      } else {
+        image.scaleToHeight(maxHeight);
+      }
+    }
+
+    // 缩放后重新设置位置（确保在中心）
+    image.set({
+      left: targetX,
+      top: targetY,
+    });
 
     return image;
   } catch (error) {
