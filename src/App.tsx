@@ -1,34 +1,27 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { CanvasProvider } from './contexts/CanvasContext';
+import { EditorLayout } from './components/layout/EditorLayout';
+import { ComponentPanel } from './components/panel/ComponentPanel';
+import { FabricCanvas } from './components/canvas/FabricCanvas';
+import { ExportPanel } from './components/panel/ExportPanel';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <CanvasProvider>
+      <div className="h-screen flex flex-col bg-gray-50">
+        {/* 顶部标题栏 */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+          <h1 className="text-xl font-bold text-gray-800">Fabric.js 设计工具</h1>
+        </header>
+
+        {/* 主布局 */}
+        <EditorLayout
+          left={<ComponentPanel />}
+          center={<FabricCanvas width={800} height={600} />}
+          right={<ExportPanel />}
+        />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </CanvasProvider>
+  );
 }
 
-export default App
+export default App;
