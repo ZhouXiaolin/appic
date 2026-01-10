@@ -29,9 +29,9 @@ function exportAsSVG(canvas: Canvas): string {
 }
 
 /**
- * 下载文件
+ * 下载文件（用于文本数据：JSON、SVG）
  */
-function downloadFile(data: string, filename: string, mimeType: string): void {
+function downloadTextFile(data: string, filename: string, mimeType: string): void {
   const blob = new Blob([data], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -44,43 +44,45 @@ function downloadFile(data: string, filename: string, mimeType: string): void {
 }
 
 /**
+ * 下载图片（用于 Data URL）
+ */
+function downloadImageFile(dataUrl: string, filename: string): void {
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/**
  * 导出 Canvas（主函数）
  */
 export function exportCanvas(canvas: Canvas, format: ExportFormat): void {
-  let data: string;
-  let filename: string;
-  let mimeType: string;
-
   switch (format) {
     case 'png':
-      data = exportAsImage(canvas, { format: 'png', quality: 1, multiplier: 2 });
-      filename = 'design.png';
-      mimeType = 'image/png';
+      const pngData = exportAsImage(canvas, { format: 'png', quality: 1, multiplier: 2 });
+      downloadImageFile(pngData, 'design.png');
       break;
 
     case 'jpeg':
-      data = exportAsImage(canvas, { format: 'jpeg', quality: 1, multiplier: 2 });
-      filename = 'design.jpg';
-      mimeType = 'image/jpeg';
+      const jpegData = exportAsImage(canvas, { format: 'jpeg', quality: 1, multiplier: 2 });
+      downloadImageFile(jpegData, 'design.jpg');
       break;
 
     case 'json':
-      data = exportAsJSON(canvas);
-      filename = 'design.json';
-      mimeType = 'application/json';
+      const jsonData = exportAsJSON(canvas);
+      downloadTextFile(jsonData, 'design.json', 'application/json');
       break;
 
     case 'svg':
-      data = exportAsSVG(canvas);
-      filename = 'design.svg';
-      mimeType = 'image/svg+xml';
+      const svgData = exportAsSVG(canvas);
+      downloadTextFile(svgData, 'design.svg', 'image/svg+xml');
       break;
 
     default:
       throw new Error(`Unsupported export format: ${format}`);
   }
-
-  downloadFile(data, filename, mimeType);
 }
 
 /**
