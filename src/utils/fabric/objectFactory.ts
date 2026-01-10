@@ -36,35 +36,41 @@ export function createTextObject(props: Partial<TextObjectProps> = {}): Text {
 /**
  * 创建图片对象（异步）
  */
-export function createImageObject(props: Partial<ImageObjectProps> = {}): Promise<Image> {
-  return new Promise((resolve, reject) => {
-    if (!props.src) {
-      reject(new Error('Image source is required'));
-      return;
-    }
+export async function createImageObject(props: Partial<ImageObjectProps> & { maxWidth?: number; maxHeight?: number } = {}): Promise<Image> {
+  if (!props.src) {
+    throw new Error('Image source is required');
+  }
 
-    Image.fromURL(
-      props.src,
-      {
-        left: props.x || 100,
-        top: props.y || 100,
-        opacity: props.opacity !== undefined ? props.opacity : 1,
-        crossOrigin: 'anonymous',
-        originX: 'center',
-        originY: 'center',
-      },
-      (image) => {
-        if (image) {
-          image.id = props.id || generateId();
-          // 限制最大宽度
-          image.scaleToWidth(200);
-          resolve(image);
-        } else {
-          reject(new Error('Failed to create image'));
-        }
-      }
-    );
-  });
+  const maxWidth = props.maxWidth || 400;
+  const maxHeight = props.maxHeight || 300;
+
+  try {
+    // Fabric.js v7 使用 Promise API
+    const image = await Image.fromURL(props.src, {
+      left: props.x || 100,
+      top: props.y || 100,
+      opacity: props.opacity !== undefined ? props.opacity : 1,
+      originX: 'center',
+      originY: 'center',
+    });
+
+    image.id = props.id || generateId();
+
+    // 智能缩放图片以适应指定尺寸，同时保持宽高比
+    const imgWidth = image.width || 1;
+    const imgHeight = image.height || 1;
+
+    // 计算缩放比例
+    const scaleX = maxWidth / imgWidth;
+    const scaleY = maxHeight / imgHeight;
+    const scale = Math.min(scaleX, scaleY, 1); // 不放大，只缩小
+
+    image.scale(scale);
+
+    return image;
+  } catch (error) {
+    throw new Error(`Failed to create image: ${error}`);
+  }
 }
 
 /**

@@ -87,23 +87,40 @@ export function ComponentList() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file || !canvasRef.current) return;
 
+      console.log('File selected:', file.name, file.type, file.size);
+
       const reader = new FileReader();
       reader.onload = async (event) => {
         const imgUrl = event.target?.result as string;
+        console.log('Image data URL length:', imgUrl.length);
+
         try {
-          // 使用canvas的逻辑尺寸来计算中心点
+          // 使用canvas的逻辑尺寸来计算中心点和最大尺寸
           const centerX = canvasRef.current!.width / 2;
           const centerY = canvasRef.current!.height / 2;
+          const maxWidth = canvasRef.current!.width * 0.8; // 画布宽度的80%
+          const maxHeight = canvasRef.current!.height * 0.8; // 画布高度的80%
+
+          console.log('Creating image object with:', { centerX, centerY, maxWidth, maxHeight });
+
           const imageObj = await createImageObject({
             src: imgUrl,
             x: centerX,
             y: centerY,
+            maxWidth,
+            maxHeight,
           });
+
+          console.log('Image object created:', imageObj);
+
           canvasRef.current!.add(imageObj);
           canvasRef.current!.setActiveObject(imageObj);
           canvasRef.current!.requestRenderAll();
+
+          console.log('Image added to canvas');
         } catch (error) {
           console.error('Failed to load image:', error);
+          alert(`图片加载失败: ${error}`);
         }
       };
       reader.readAsDataURL(file);
