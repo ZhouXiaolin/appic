@@ -146,8 +146,8 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      {/* 画布区域 */}
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
+      {/* 画布区域 - 占据剩余空间 */}
       <div className="flex-1 overflow-hidden">
         <FabricCanvas
           width={activePage.config.width}
@@ -169,8 +169,10 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
         />
       </div>
 
-      {/* 底部工具栏 */}
-      <BottomToolbar onAddItem={handleAddItem} />
+      {/* 底部工具栏 - 固定在底部 */}
+      <div className="flex-shrink-0">
+        <BottomToolbar onAddItem={handleAddItem} />
+      </div>
     </div>
   );
 }
