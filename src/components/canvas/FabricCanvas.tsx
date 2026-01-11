@@ -93,16 +93,20 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
   const loadPageData = useDesignStore(state => state.loadPageData);
   const saveCurrentPageData = useDesignStore(state => state.saveCurrentPageData);
 
-  // 当 activePageId 变化时，加载新页面数据
+  // 当 canvas 准备好后，加载页面数据
   useEffect(() => {
-    if (!design?.activePageId || !canvasRef.current) return;
+    if (!canvasRef.current || !design?.activePageId) return;
 
-    const loadNewPageData = async () => {
-      await loadPageData(design.activePageId);
-    };
+    // 使用 requestAnimationFrame 确保在下一帧执行，此时 canvas 应该已经注册到 canvasRefs
+    const rafId = requestAnimationFrame(() => {
+      // 再使用 setTimeout 确保在所有状态更新后执行
+      setTimeout(() => {
+        loadPageData(design.activePageId);
+      }, 50);
+    });
 
-    loadNewPageData();
-  }, [design?.activePageId, loadPageData]);
+    return () => cancelAnimationFrame(rafId);
+  }, [canvasRef.current, design?.activePageId, loadPageData]);
 
   // 当画布尺寸变化时，更新 Canvas 尺寸
   useEffect(() => {
@@ -143,11 +147,6 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
 
     onReady?.(canvas);
 
-    // Load initial page data if design exists
-    if (design?.activePageId) {
-      loadPageData(design.activePageId);
-    }
-
     return () => {
       canvas.dispose();
       canvasRef.current = null;
@@ -155,11 +154,11 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Save page data when active page changes (before switching)
+  // Save page data before browser close
   useEffect(() => {
-    if (!design?.activePageId || !canvasRef.current) return;
+    if (!design?.activePageId) return;
 
-    // Save current page data before potential page switch
+    // Save current page data before browser closes
     const handleBeforeUnload = () => {
       saveCurrentPageData();
     };
@@ -167,8 +166,6 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      // Save when component unmounts or page changes
-      saveCurrentPageData();
     };
   }, [design?.activePageId, saveCurrentPageData]);
 
@@ -241,12 +238,22 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
     'object:modified': () => {
       setIsDragging(false);
       saveHistory();
+      // Auto-save canvas data to IndexedDB when object is modified
+      saveCurrentPageData();
     },
     'mouse:up': () => {
       setIsDragging(false);
     },
-    'object:added': () => saveHistory(),
-    'object:removed': () => saveHistory(),
+    'object:added': () => {
+      saveHistory();
+      // Auto-save canvas data to IndexedDB when object is added
+      saveCurrentPageData();
+    },
+    'object:removed': () => {
+      saveHistory();
+      // Auto-save canvas data to IndexedDB when object is removed
+      saveCurrentPageData();
+    },
   });
 
   // 键盘事件监听 - 删除选中对象
@@ -273,6 +280,9 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
 
       // 保存历史
       saveHistory();
+
+      // 保存 canvas 数据到 IndexedDB
+      saveCurrentPageData();
 
       // 通知父组件删除对应的图层
       if (onObjectDelete) {

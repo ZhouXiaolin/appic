@@ -177,6 +177,7 @@ export function CanvasArea() {
       {/* 画布区域 - 占据剩余空间 */}
       <div className="flex-1 overflow-hidden">
         <FabricCanvas
+          key={activePage.id}
           width={activePage.config.width}
           height={activePage.config.height}
           onReady={(canvas) => {

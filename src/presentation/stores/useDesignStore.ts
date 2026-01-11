@@ -210,19 +210,29 @@ export const useDesignStore = create<DesignState>()(
 
       // Set active page (with data isolation)
       setActivePage: async (pageId: string) => {
-        const { design, saveCurrentPageData, loadPageData } = get();
+        const { design, canvasRefs } = get();
         if (!design) return;
 
-        // Save current page data before switching
-        await saveCurrentPageData();
+        // Save current page data BEFORE updating activePageId
+        // This ensures we use the existing canvas before it gets disposed
+        if (design.activePageId) {
+          const currentCanvas = canvasRefs.get(design.activePageId);
+          if (currentCanvas) {
+            const objects = currentCanvas.getObjects();
+            const canvasJSON = JSON.stringify(currentCanvas.toJSON());
+            console.log(`[setActivePage] Saving ${objects.length} objects for current page ${design.activePageId} before switching`);
+            await savePageData(design.id, design.activePageId, canvasJSON);
+            console.log(`[setActivePage] Successfully saved current page data`);
+          }
+        }
 
         // Update active page
         const updatedDesign = { ...design, activePageId: pageId };
         set({ design: updatedDesign });
         await saveDesign(updatedDesign);
 
-        // Load new page data
-        await loadPageData(pageId);
+        // Note: loadPageData will be called automatically by FabricCanvas useEffect
+        // when the new canvas instance is ready
       },
 
       // Update page config
@@ -481,38 +491,85 @@ export const useDesignStore = create<DesignState>()(
       // Save current page canvas data to IndexedDB
       saveCurrentPageData: async () => {
         const { design, canvasRefs } = get();
-        if (!design || !design.activePageId) return;
+        if (!design || !design.activePageId) {
+          console.log('[saveCurrentPageData] No design or active page');
+          return;
+        }
 
         const canvas = canvasRefs.get(design.activePageId);
-        if (!canvas) return;
+        if (!canvas) {
+          console.log(`[saveCurrentPageData] No canvas found for page ${design.activePageId}`);
+          return;
+        }
 
+        const objects = canvas.getObjects();
         const canvasJSON = JSON.stringify(canvas.toJSON());
+        console.log(`[saveCurrentPageData] Saving ${objects.length} objects for page ${design.activePageId}`);
+        
         await savePageData(design.id, design.activePageId, canvasJSON);
+        console.log(`[saveCurrentPageData] Successfully saved to IndexedDB`);
       },
 
       // Load page canvas data from IndexedDB
       loadPageData: async (pageId: string) => {
-        const { design, canvasRefs, activePageId } = get();
+        const { design, canvasRefs } = get();
         if (!design) return;
 
-        // Try to get canvas for the specific page
-        let canvas = canvasRefs.get(pageId);
+        console.log(`[loadPageData] Loading data for page ${pageId}`);
+        console.log(`[loadPageData] Available canvasRefs:`, Array.from(canvasRefs.keys()));
+        console.log(`[loadPageData] Looking for canvas of page:`, pageId);
 
-        // If not found, try to get the active page's canvas (for page switching scenario)
-        if (!canvas && activePageId) {
-          canvas = canvasRefs.get(activePageId);
+        // When using key prop, each page gets its own canvas instance
+        // We need to find the canvas for this specific page
+        // Try to get canvas from canvasRefs, or use the one from CanvasContext
+        const canvasEntries = Array.from(canvasRefs.entries());
+        let canvas: Canvas | null = null;
+
+        // Try to find canvas by pageId
+        const canvasByPageId = canvasRefs.get(pageId);
+        if (canvasByPageId) {
+          console.log(`[loadPageData] Found canvas by pageId`);
+          canvas = canvasByPageId;
+        } else {
+          // Fallback: use any available canvas (for backward compatibility)
+          console.log(`[loadPageData] Canvas not found by pageId, trying fallback`);
+          canvas = canvasEntries[0]?.[1] || null;
         }
 
-        if (!canvas) return;
+        // Check if canvas exists - don't check context as it may not be available immediately
+        if (!canvas) {
+          console.warn('[loadPageData] Canvas not available, skipping page data load');
+          return;
+        }
+
+        // Wait for canvas to be fully initialized
+        if (!canvas.getElement()) {
+          console.warn('[loadPageData] Canvas element not available, skipping page data load');
+          return;
+        }
+
+        console.log(`[loadPageData] Canvas found and initialized, loading data...`);
 
         const canvasJSON = await getPageData(design.id, pageId);
         if (canvasJSON) {
-          await canvas.loadFromJSON(JSON.parse(canvasJSON));
-          canvas.requestRenderAll();
+          try {
+            await canvas.loadFromJSON(JSON.parse(canvasJSON));
+            canvas.requestRenderAll();
+            console.log(`[loadPageData] Successfully loaded ${canvas.getObjects().length} objects for page ${pageId}`);
+          } catch (error) {
+            console.error('[loadPageData] Failed to load canvas data:', error);
+            // Clear canvas on error
+            try {
+              canvas.clear();
+              canvas.requestRenderAll();
+            } catch (clearError) {
+              console.error('[loadPageData] Failed to clear canvas after load error:', clearError);
+            }
+          }
         } else {
-          // Clear canvas if no data exists
-          canvas.clear();
-          canvas.requestRenderAll();
+          console.log(`[loadPageData] No saved data found for page ${pageId}`);
+          // No saved data, canvas is already empty after initialization
+          // Don't clear it to avoid errors
         }
       },
 
