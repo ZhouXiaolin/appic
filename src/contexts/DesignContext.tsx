@@ -382,11 +382,17 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       const canvas = state.canvasRefs.get(pageId);
       if (!canvas) return;
 
-      // 在 Fabric canvas 中查找对应的对象并选中
-      const fabricObject = canvas.getObjects().find(obj => obj.id === layer.fabricObjectId);
-      if (fabricObject) {
-        canvas.setActiveObject(fabricObject);
-        canvas.requestRenderAll();
+      // 检查当前 Canvas 的活动对象是否已经是目标对象
+      const currentActiveObject = canvas.getActiveObject();
+      const currentActiveId = (currentActiveObject as any)?.id;
+
+      // 只在需要改变时才设置，避免重复触发事件
+      if (currentActiveId !== layer.fabricObjectId) {
+        const fabricObject = canvas.getObjects().find(obj => obj.id === layer.fabricObjectId);
+        if (fabricObject) {
+          canvas.setActiveObject(fabricObject);
+          canvas.requestRenderAll();
+        }
       }
     }
   }, [state.design, state.canvasRefs]);

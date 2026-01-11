@@ -31,7 +31,7 @@ const LAYER_NAMES: Record<string, string> = {
 };
 
 export function CanvasArea() {
-  const { getActivePage, addLayer, setCanvasRef, deleteLayer } = useDesign();
+  const { getActivePage, addLayer, setCanvasRef, deleteLayer, setActiveLayer } = useDesign();
   const { canvasRef } = useCanvas();
 
   const activePage = getActivePage();
@@ -46,6 +46,23 @@ export function CanvasArea() {
       deleteLayer(activePage.id, layerToDelete.id);
     }
   }, [activePage, deleteLayer]);
+
+  // 处理 Canvas 选中对象（从 Fabric Canvas 触发）
+  const handleObjectSelect = useCallback((fabricObjectId: string | null) => {
+    if (!activePage) return;
+
+    if (fabricObjectId) {
+      // 找到对应的图层并设置为活动图层
+      const layerToSelect = activePage.layers.find(l => l.fabricObjectId === fabricObjectId);
+      if (layerToSelect && activePage.activeLayerId !== layerToSelect.id) {
+        // 只在选中状态改变时才更新，避免循环
+        setActiveLayer(activePage.id, layerToSelect.id);
+      }
+    } else if (activePage.activeLayerId) {
+      // 只在当前有选中图层时才清除，避免不必要的调用
+      setActiveLayer(activePage.id, null);
+    }
+  }, [activePage, setActiveLayer]);
 
   const handleAddItem = async (type: ItemType) => {
     if (!canvasRef.current || !activePage) return;
@@ -162,6 +179,7 @@ export function CanvasArea() {
             setCanvasRef(activePage.id, canvas);
           }}
           onObjectDelete={handleObjectDelete}
+          onObjectSelect={handleObjectSelect}
         />
       </div>
 

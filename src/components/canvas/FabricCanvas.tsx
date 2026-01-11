@@ -13,6 +13,7 @@ interface FabricCanvasProps {
   height?: number;
   onReady?: (canvas: Canvas) => void;
   onObjectDelete?: (fabricObjectId: string) => void;
+  onObjectSelect?: (fabricObjectId: string | null) => void;
 }
 
 const PADDING = 64;
@@ -31,7 +32,7 @@ interface ScaleInfo {
   height: number;
 }
 
-export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelete }: FabricCanvasProps) {
+export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelete, onObjectSelect }: FabricCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasInnerWrapperRef = useRef<HTMLDivElement>(null);
   const { dispatch, canvasRef, setSelectedObject, clearSelection, state, setIsDragging } = useCanvas();
@@ -145,14 +146,32 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
   useCanvasEvents(canvasRef.current, {
     'selection:created': (e) => {
       const selected = e.selected?.[0];
-      if (selected) setSelectedObject(selected);
+      if (selected) {
+        setSelectedObject(selected);
+        // 通知父组件更新图层列表选中状态
+        const fabricObjectId = (selected as any).id;
+        if (onObjectSelect && fabricObjectId) {
+          onObjectSelect(fabricObjectId);
+        }
+      }
     },
     'selection:updated': (e) => {
       const selected = e.selected?.[0];
-      if (selected) setSelectedObject(selected);
+      if (selected) {
+        setSelectedObject(selected);
+        // 通知父组件更新图层列表选中状态
+        const fabricObjectId = (selected as any).id;
+        if (onObjectSelect && fabricObjectId) {
+          onObjectSelect(fabricObjectId);
+        }
+      }
     },
     'selection:cleared': () => {
       clearSelection();
+      // 清除图层列表选中状态
+      if (onObjectSelect) {
+        onObjectSelect(null);
+      }
     },
     'mouse:dblclick': (e) => {
       const target = e.target;
