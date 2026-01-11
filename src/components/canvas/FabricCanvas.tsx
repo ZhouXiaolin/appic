@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Canvas } from 'fabric';
 import { Download } from 'lucide-react';
 import { useCanvas } from '../../contexts/CanvasContext';
+import { useDesignStore } from '../../presentation/stores/useDesignStore';
 import { useCanvasEvents } from '../../hooks/useCanvasEvents';
 import { useHistory } from '../../hooks/useHistory';
 import { defaultCanvasConfig } from '../../constants/canvas';
@@ -87,6 +88,11 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
     };
   }, [width, height]);
 
+  // Get store actions for page data management
+  const design = useDesignStore(state => state.design);
+  const loadPageData = useDesignStore(state => state.loadPageData);
+  const saveCurrentPageData = useDesignStore(state => state.saveCurrentPageData);
+
   // 初始化 Canvas
   useEffect(() => {
     if (!canvasInnerWrapperRef.current || canvasRef.current) return;
@@ -115,12 +121,34 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
 
     onReady?.(canvas);
 
+    // Load initial page data if design exists
+    if (design?.activePageId) {
+      loadPageData(design.activePageId);
+    }
+
     return () => {
       canvas.dispose();
       canvasRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Save page data when active page changes (before switching)
+  useEffect(() => {
+    if (!design?.activePageId || !canvasRef.current) return;
+
+    // Save current page data before potential page switch
+    const handleBeforeUnload = () => {
+      saveCurrentPageData();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Save when component unmounts or page changes
+      saveCurrentPageData();
+    };
+  }, [design?.activePageId, saveCurrentPageData]);
 
   // 导出处理函数
   const handleExport = useCallback((format: ExportFormat) => {

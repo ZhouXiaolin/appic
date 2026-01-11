@@ -5,16 +5,17 @@
 
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { useDesign } from '../../contexts/DesignContext';
+import { useDesignStore } from '../../presentation/stores/useDesignStore';
 import { AddPageMenu } from './AddPageMenu';
 import { formatSize } from '../../constants/design';
 
 export function PagesList() {
-  const { state, deletePage, setActivePage } = useDesign();
+  const design = useDesignStore(state => state.design);
+  const deletePage = useDesignStore(state => state.deletePage);
+  const setActivePage = useDesignStore(state => state.setActivePage);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
-  const design = state.design;
   if (!design) return null;
 
   const handleAddPage = (e: React.MouseEvent) => {

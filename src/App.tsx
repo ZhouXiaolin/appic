@@ -1,14 +1,13 @@
 import { useEffect } from 'react';
-import { DesignProvider } from './contexts/DesignContext';
 import { CanvasProvider, useCanvas } from './contexts/CanvasContext';
 import { EditorLayout } from './components/layout/EditorLayout';
 import { LeftPanel } from './components/panel/LeftPanel';
 import { CanvasArea } from './components/canvas/CanvasArea';
 import { PropertyPanel } from './components/panel/PropertyPanel';
-import { useDesign } from './contexts/DesignContext';
+import { useDesignStore } from './presentation/stores/useDesignStore';
 
 function AppContent() {
-  const { createDesign } = useDesign();
+  const createDesign = useDesignStore(state => state.createDesign);
   const { isDragging, selectedObject } = useCanvas();
 
   // 初始化：创建默认设计（但不创建默认页面）
@@ -29,11 +28,9 @@ function AppContent() {
 
 function App() {
   return (
-    <DesignProvider>
-      <CanvasProvider>
-        <AppContent />
-      </CanvasProvider>
-    </DesignProvider>
+    <CanvasProvider>
+      <AppContent />
+    </CanvasProvider>
   );
 }
 

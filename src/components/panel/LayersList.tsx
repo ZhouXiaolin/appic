@@ -22,7 +22,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Page } from '../../types/design.types';
-import { useDesign } from '../../contexts/DesignContext';
+import { useDesignStore } from '../../presentation/stores/useDesignStore';
 
 const LAYER_ICONS: Record<string, React.ElementType> = {
   text: Type,
@@ -141,7 +141,10 @@ function SortableLayerItem({
 }
 
 export function LayersList({ page }: LayersListProps) {
-  const { setActiveLayer, toggleLayerVisibility, toggleLayerLock, reorderLayers } = useDesign();
+  const setActiveLayer = useDesignStore(state => state.setActiveLayer);
+  const toggleLayerVisibility = useDesignStore(state => state.toggleLayerVisibility);
+  const toggleLayerLock = useDesignStore(state => state.toggleLayerLock);
+  const reorderLayers = useDesignStore(state => state.reorderLayers);
 
   // 配置拖拽传感器
   const sensors = useSensors(

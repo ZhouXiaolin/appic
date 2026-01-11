@@ -3,7 +3,7 @@
  * 包含 FabricCanvas 和底部工具栏
  */
 import { useCallback } from 'react';
-import { useDesign } from '../../contexts/DesignContext';
+import { useDesignStore } from '../../presentation/stores/useDesignStore';
 import { useCanvas } from '../../contexts/CanvasContext';
 import { FabricCanvas } from './FabricCanvas';
 import { BottomToolbar } from '../toolbar/BottomToolbar';
@@ -31,10 +31,15 @@ const LAYER_NAMES: Record<string, string> = {
 };
 
 export function CanvasArea() {
-  const { getActivePage, addLayer, setCanvasRef, deleteLayer, setActiveLayer } = useDesign();
+  const design = useDesignStore(state => state.design);
+  const addLayer = useDesignStore(state => state.addLayer);
+  const setCanvasRef = useDesignStore(state => state.setCanvasRef);
+  const deleteLayer = useDesignStore(state => state.deleteLayer);
+  const setActiveLayer = useDesignStore(state => state.setActiveLayer);
   const { canvasRef } = useCanvas();
 
-  const activePage = getActivePage();
+  // Get active page from design
+  const activePage = design?.pages.find(p => p.id === design.activePageId) || null;
 
   // 处理删除对象（从 Fabric Canvas 触发）
   const handleObjectDelete = useCallback((fabricObjectId: string) => {
@@ -184,7 +189,7 @@ export function CanvasArea() {
       </div>
 
       {/* 底部工具栏 - 固定在底部 */}
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         <BottomToolbar onAddItem={handleAddItem} />
       </div>
     </div>

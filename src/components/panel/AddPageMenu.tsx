@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { useDesign } from '../../contexts/DesignContext';
+import { useDesignStore } from '../../presentation/stores/useDesignStore';
 import { ADD_SIZE_MENU_OPTIONS, DEFAULT_PAGE_NAME } from '../../constants/design';
 import type { SizeMenuOption } from '../../types/design.types';
 
@@ -14,7 +14,7 @@ interface AddPageMenuProps {
 }
 
 export function AddPageMenu({ position, onClose }: AddPageMenuProps) {
-  const { addPage } = useDesign();
+  const addPage = useDesignStore(state => state.addPage);
   const [isCustom, setIsCustom] = useState(false);
   const [customWidth, setCustomWidth] = useState(800);
   const [customHeight, setCustomHeight] = useState(600);

@@ -2,14 +2,14 @@
  * 左侧面板
  * 包含：设计标题、页面列表、图层列表
  */
-import { useDesign } from '../../contexts/DesignContext';
+import { useDesignStore } from '../../presentation/stores/useDesignStore';
 import { DesignTitle } from './DesignTitle';
 import { PagesList } from './PagesList';
 import { LayersList } from './LayersList';
 
 export function LeftPanel() {
-  const { getActivePage } = useDesign();
-  const activePage = getActivePage();
+  const design = useDesignStore(state => state.design);
+  const activePage = design?.pages.find(p => p.id === design.activePageId) || null;
 
   return (
     <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
