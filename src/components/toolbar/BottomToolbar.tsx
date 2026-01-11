@@ -3,7 +3,7 @@
  * 提供添加图片、文字、形状的快捷方式
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Type, Image, Square, Circle, ChevronDown } from 'lucide-react';
 import { TOOLBAR_ITEMS, SHAPE_OPTIONS } from '../../constants/design';
 
@@ -18,40 +18,39 @@ const TOOLBAR_ICONS: Record<string, React.ElementType> = {
   circle: Circle,
 };
 
+// 共享按钮样式
+const buttonClassName = `flex flex-col items-center gap-1 px-4 py-2
+  hover:bg-gray-100 rounded-lg transition-colors group`;
+
 export function BottomToolbar({ onAddItem }: BottomToolbarProps) {
   const [showShapeMenu, setShowShapeMenu] = useState(false);
   const shapeMenuRef = useRef<HTMLDivElement>(null);
 
   // 点击外部区域关闭菜单
   useEffect(() => {
+    if (!showShapeMenu) return;
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (shapeMenuRef.current && !shapeMenuRef.current.contains(event.target as Node)) {
-        setShowShapeMenu(false);
-      }
+      if (shapeMenuRef.current?.contains(event.target as Node)) return;
+      setShowShapeMenu(false);
     };
 
-    if (showShapeMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showShapeMenu]);
 
-  const handleItemClick = (item: { id: string; type: 'text' | 'image' | 'rectangle' | 'circle' | 'triangle' }) => {
+  const handleItemClick = useCallback((item: typeof TOOLBAR_ITEMS[number]) => {
     if (item.id === 'shape') {
-      // 如果是形状按钮，显示/隐藏下拉菜单
-      setShowShapeMenu(!showShapeMenu);
+      setShowShapeMenu(prev => !prev);
       return;
     }
     onAddItem(item.type);
-  };
+  }, [onAddItem]);
 
-  const handleShapeSelect = (shapeType: 'rectangle' | 'circle' | 'triangle') => {
+  const handleShapeSelect = useCallback((shapeType: 'rectangle' | 'circle' | 'triangle') => {
     onAddItem(shapeType);
     setShowShapeMenu(false);
-  };
+  }, [onAddItem]);
 
   return (
     <div className="flex items-center justify-center gap-2 px-6 py-3 bg-white border-t border-gray-200 relative">
@@ -63,9 +62,7 @@ export function BottomToolbar({ onAddItem }: BottomToolbarProps) {
           <div key={item.id} className="relative" ref={isShapeButton ? shapeMenuRef : null}>
             <button
               onClick={() => handleItemClick(item)}
-              className={`flex flex-col items-center gap-1 px-4 py-2
-                         hover:bg-gray-100 rounded-lg transition-colors group
-                         ${showShapeMenu && isShapeButton ? 'bg-gray-100' : ''}`}
+              className={`${buttonClassName} ${showShapeMenu && isShapeButton ? 'bg-gray-100' : ''}`}
               title={item.description}
             >
               <div className="flex items-center gap-1">
@@ -81,7 +78,7 @@ export function BottomToolbar({ onAddItem }: BottomToolbarProps) {
 
             {/* 形状下拉菜单 */}
             {isShapeButton && showShapeMenu && (
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
                             bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] z-50">
                 {SHAPE_OPTIONS.map((shape) => {
                   const ShapeIcon = TOOLBAR_ICONS[shape.type];
@@ -89,7 +86,7 @@ export function BottomToolbar({ onAddItem }: BottomToolbarProps) {
                     <button
                       key={shape.type}
                       onClick={() => handleShapeSelect(shape.type)}
-                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100 
+                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100
                                text-left text-sm text-gray-700 transition-colors"
                     >
                       <ShapeIcon className="w-4 h-4" />

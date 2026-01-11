@@ -18,7 +18,7 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
     );
   }
 
-  const handlePropertyChange = (property: string, value: any) => {
+  const handlePropertyChange = (property: string, value: unknown) => {
     if (!selectedObject || !canvasRef.current) return;
 
     selectedObject.set(property, value);
@@ -75,7 +75,7 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
             <label className="block text-xs text-gray-500 mb-1">X</label>
             <input
               type="number"
-              value={Math.round(selectedObject.left || 0)}
+              value={Math.round(selectedObject.left ?? 0)}
               onChange={(e) => handlePropertyChange('left', Number(e.target.value))}
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -84,7 +84,7 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
             <label className="block text-xs text-gray-500 mb-1">Y</label>
             <input
               type="number"
-              value={Math.round(selectedObject.top || 0)}
+              value={Math.round(selectedObject.top ?? 0)}
               onChange={(e) => handlePropertyChange('top', Number(e.target.value))}
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -100,9 +100,9 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
             <label className="block text-xs text-gray-500 mb-1">宽度</label>
             <input
               type="number"
-              value={Math.round((selectedObject.width || 0) * (selectedObject.scaleX || 1))}
+              value={Math.round((selectedObject.width ?? 0) * (selectedObject.scaleX ?? 1))}
               onChange={(e) => {
-                const newScaleX = Number(e.target.value) / (selectedObject.width || 1);
+                const newScaleX = Number(e.target.value) / (selectedObject.width ?? 1);
                 handlePropertyChange('scaleX', newScaleX);
               }}
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -112,9 +112,9 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
             <label className="block text-xs text-gray-500 mb-1">高度</label>
             <input
               type="number"
-              value={Math.round((selectedObject.height || 0) * (selectedObject.scaleY || 1))}
+              value={Math.round((selectedObject.height ?? 0) * (selectedObject.scaleY ?? 1))}
               onChange={(e) => {
-                const newScaleY = Number(e.target.value) / (selectedObject.height || 1);
+                const newScaleY = Number(e.target.value) / (selectedObject.height ?? 1);
                 handlePropertyChange('scaleY', newScaleY);
               }}
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -130,7 +130,7 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
           <label className="block text-xs text-gray-500 mb-1">角度 (°)</label>
           <input
             type="number"
-            value={Math.round((selectedObject.angle || 0) % 360)}
+            value={Math.round((selectedObject.angle ?? 0) % 360)}
             onChange={(e) => handlePropertyChange('angle', Number(e.target.value))}
             className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -144,7 +144,7 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
           <label className="block text-xs text-gray-500 mb-1">填充颜色</label>
           <input
             type="color"
-            value={selectedObject.fill as string || '#000000'}
+            value={(selectedObject.fill as string) ?? '#000000'}
             onChange={(e) => handlePropertyChange('fill', e.target.value)}
             className="w-full h-10 rounded cursor-pointer border border-gray-300"
           />
@@ -156,7 +156,7 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
             min="0"
             max="1"
             step="0.1"
-            value={selectedObject.opacity || 1}
+            value={selectedObject.opacity ?? 1}
             onChange={(e) => handlePropertyChange('opacity', Number(e.target.value))}
             className="w-full"
           />
@@ -171,7 +171,7 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
             <label className="block text-xs text-gray-500 mb-1">字号</label>
             <input
               type="number"
-              value={(selectedObject as any).fontSize || 24}
+              value={(selectedObject as any).fontSize ?? 24}
               onChange={(e) => handlePropertyChange('fontSize', Number(e.target.value))}
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />

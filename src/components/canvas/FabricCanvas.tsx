@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Canvas } from 'fabric';
 import { Download } from 'lucide-react';
 import { useCanvas } from '../../contexts/CanvasContext';
@@ -121,27 +121,23 @@ export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanva
   }, []);
 
   // 导出处理函数
-  const handleExport = (format: ExportFormat) => {
+  const handleExport = useCallback((format: ExportFormat) => {
     if (!canvasRef.current) return;
     exportCanvas(canvasRef.current, format);
     setIsExportMenuOpen(false);
-  };
+  }, [canvasRef]);
 
   // 点击外部关闭菜单
   useEffect(() => {
+    if (!isExportMenuOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
-        setIsExportMenuOpen(false);
-      }
+      if (exportMenuRef.current?.contains(event.target as Node)) return;
+      setIsExportMenuOpen(false);
     };
 
-    if (isExportMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isExportMenuOpen]);
 
   // 监听 Canvas 事件

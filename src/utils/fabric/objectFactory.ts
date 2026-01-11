@@ -1,5 +1,4 @@
 import { Rect, Circle, Textbox, Image } from 'fabric';
-import { CanvasObjectType } from '../../types/canvas.types';
 import type { TextObjectProps, ImageObjectProps, BaseObjectProps } from '../../types/canvas.types';
 import { objectDefaults } from '../../constants/canvas';
 
@@ -7,7 +6,7 @@ import { objectDefaults } from '../../constants/canvas';
  * 生成唯一 ID
  */
 function generateId(): string {
-  return `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `obj_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 /**
@@ -15,54 +14,56 @@ function generateId(): string {
  */
 export function createTextObject(props: Partial<TextObjectProps> = {}): Textbox {
   const defaults = objectDefaults.text;
-  const text = new Textbox(props.text || defaults.text, {
-    left: props.x || 100,
-    top: props.y || 100,
-    width: props.width || 200, // 设置文本框宽度
-    fontSize: props.fontSize || defaults.fontSize,
-    fontFamily: props.fontFamily || defaults.fontFamily,
-    fontWeight: props.fontWeight || defaults.fontWeight,
-    fontStyle: (props.fontStyle || 'normal') as 'normal' | 'italic' | 'oblique',
-    textAlign: (props.textAlign || 'left') as 'left' | 'center' | 'right',
-    fill: props.fill || defaults.fill,
-    opacity: props.opacity !== undefined ? props.opacity : 1,
+  const text = new Textbox(props.text ?? defaults.text, {
+    left: props.x ?? 100,
+    top: props.y ?? 100,
+    width: props.width ?? 200, // 设置文本框宽度
+    fontSize: props.fontSize ?? defaults.fontSize,
+    fontFamily: props.fontFamily ?? defaults.fontFamily,
+    fontWeight: props.fontWeight ?? defaults.fontWeight,
+    fontStyle: (props.fontStyle ?? 'normal') as 'normal' | 'italic' | 'oblique',
+    textAlign: (props.textAlign ?? 'left') as 'left' | 'center' | 'right',
+    fill: props.fill ?? defaults.fill,
+    opacity: props.opacity ?? 1,
     originX: 'center',
     originY: 'center',
     splitByGrapheme: true, // 支持更好的换行
   });
 
-  text.id = props.id || generateId();
+  text.id = props.id ?? generateId();
   return text;
 }
 
 /**
  * 创建图片对象（异步）
  */
-export async function createImageObject(props: Partial<ImageObjectProps> & { maxWidth?: number; maxHeight?: number } = {}): Promise<Image> {
+export async function createImageObject(
+  props: Partial<ImageObjectProps> & { maxWidth?: number; maxHeight?: number } = {}
+): Promise<Image> {
   if (!props.src) {
     throw new Error('Image source is required');
   }
 
-  const maxWidth = props.maxWidth || 400;
-  const maxHeight = props.maxHeight || 300;
-  const targetX = props.x || 100;
-  const targetY = props.y || 100;
+  const maxWidth = props.maxWidth ?? 400;
+  const maxHeight = props.maxHeight ?? 300;
+  const targetX = props.x ?? 100;
+  const targetY = props.y ?? 100;
 
   try {
     // Fabric.js v7 使用 Promise API
     const image = await Image.fromURL(props.src, {
       left: targetX,
       top: targetY,
-      opacity: props.opacity !== undefined ? props.opacity : 1,
+      opacity: props.opacity ?? 1,
       originX: 'center',
       originY: 'center',
     } as any);
 
-    image.id = props.id || generateId();
+    image.id = props.id ?? generateId();
 
     // 智能缩放图片以适应指定尺寸，同时保持宽高比
-    const imgWidth = image.width || 1;
-    const imgHeight = image.height || 1;
+    const imgWidth = image.width ?? 1;
+    const imgHeight = image.height ?? 1;
 
     // 计算缩放比例
     const scaleX = maxWidth / imgWidth;
@@ -94,15 +95,15 @@ export async function createImageObject(props: Partial<ImageObjectProps> & { max
  */
 export function createShapeObject(props: Partial<BaseObjectProps> = {}): Rect | Circle {
   const commonProps = {
-    left: props.x || 100,
-    top: props.y || 100,
-    fill: props.fill || '#3b82f6',
-    stroke: props.stroke || '#000000',
-    strokeWidth: props.strokeWidth || 0,
-    opacity: props.opacity !== undefined ? props.opacity : 1,
-    angle: props.rotation || 0,
-    scaleX: props.scaleX || 1,
-    scaleY: props.scaleY || 1,
+    left: props.x ?? 100,
+    top: props.y ?? 100,
+    fill: props.fill ?? '#3b82f6',
+    stroke: props.stroke ?? '#000000',
+    strokeWidth: props.strokeWidth ?? 0,
+    opacity: props.opacity ?? 1,
+    angle: props.rotation ?? 0,
+    scaleX: props.scaleX ?? 1,
+    scaleY: props.scaleY ?? 1,
     originX: 'center' as const,
     originY: 'center' as const,
   };
@@ -110,34 +111,36 @@ export function createShapeObject(props: Partial<BaseObjectProps> = {}): Rect | 
   let shape: Rect | Circle;
 
   switch (props.type) {
-    case CanvasObjectType.RECTANGLE:
+    case 'rectangle': {
       const rectDefaults = objectDefaults.rectangle;
       shape = new Rect({
         ...commonProps,
-        width: props.width || rectDefaults.width,
-        height: props.height || rectDefaults.height,
-        fill: props.fill || rectDefaults.fill,
+        width: props.width ?? rectDefaults.width,
+        height: props.height ?? rectDefaults.height,
+        fill: props.fill ?? rectDefaults.fill,
       });
       break;
+    }
 
-    case CanvasObjectType.CIRCLE:
+    case 'circle': {
       const circleDefaults = objectDefaults.circle;
       shape = new Circle({
         ...commonProps,
-        radius: props.radius || circleDefaults.radius,
-        fill: props.fill || circleDefaults.fill,
+        radius: props.radius ?? circleDefaults.radius,
+        fill: props.fill ?? circleDefaults.fill,
       });
       break;
+    }
 
     default:
       // 默认创建矩形
       shape = new Rect({
         ...commonProps,
-        width: props.width || 100,
-        height: props.height || 100,
+        width: props.width ?? 100,
+        height: props.height ?? 100,
       });
   }
 
-  shape.id = props.id || generateId();
+  shape.id = props.id ?? generateId();
   return shape;
 }

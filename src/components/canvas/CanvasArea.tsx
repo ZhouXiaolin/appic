@@ -7,12 +7,32 @@ import { useCanvas } from '../../contexts/CanvasContext';
 import { FabricCanvas } from './FabricCanvas';
 import { BottomToolbar } from '../toolbar/BottomToolbar';
 import { createTextObject, createShapeObject, createImageObject } from '../../utils/fabric/objectFactory';
-import { CanvasObjectType } from '../../types/canvas.types';
+import type { CanvasObjectTypeValue } from '../../types/canvas.types';
 import type { Object as FabricObject } from 'fabric';
 
 interface CanvasAreaProps {
   onSelectionChange: (obj: FabricObject | null) => void;
 }
+
+type ItemType = 'text' | 'image' | 'rectangle' | 'circle' | 'triangle';
+
+interface ShapeConfig {
+  type: CanvasObjectTypeValue;
+  width?: number;
+  height?: number;
+  radius?: number;
+}
+
+const SHAPE_CONFIGS: Record<'rectangle' | 'circle', ShapeConfig> = {
+  rectangle: { type: 'rectangle' as const, width: 100, height: 100 },
+  circle: { type: 'circle' as const, radius: 50 },
+};
+
+const LAYER_NAMES: Record<string, string> = {
+  text: '文本',
+  rectangle: '矩形',
+  circle: '圆形',
+};
 
 export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
   const { getActivePage, addLayer, setCanvasRef } = useDesign();
@@ -20,77 +40,55 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
 
   const activePage = getActivePage();
 
-  const handleAddItem = async (type: 'text' | 'image' | 'rectangle' | 'circle' | 'triangle') => {
+  const handleAddItem = async (type: ItemType) => {
     if (!canvasRef.current || !activePage) return;
 
     const canvas = canvasRef.current;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
-    let object;
-    let layerName = '';
-
-    switch (type) {
-      case 'text': {
-        object = createTextObject({ x: centerX, y: centerY });
-        layerName = '文本';
-        break;
-      }
-      case 'rectangle': {
-        object = createShapeObject({
-          type: CanvasObjectType.RECTANGLE,
-          x: centerX,
-          y: centerY,
-          width: 100,
-          height: 100,
-        });
-        layerName = '矩形';
-        break;
-      }
-      case 'circle': {
-        object = createShapeObject({
-          type: CanvasObjectType.CIRCLE,
-          x: centerX,
-          y: centerY,
-          radius: 50,
-        });
-        layerName = '圆形';
-        break;
-      }
-      case 'image':
-        handleImageUpload();
-        return;
-      case 'triangle':
-        // TODO: 实现三角形创建逻辑
-        return;
+    // 处理特殊类型
+    if (type === 'image') {
+      handleImageUpload();
+      return;
+    }
+    if (type === 'triangle') {
+      // TODO: 实现三角形创建逻辑
+      return;
     }
 
-    if (object) {
-      canvas.add(object);
-      canvas.setActiveObject(object);
-      canvas.requestRenderAll();
+    // 创建形状或文本对象
+    const object = type === 'text'
+      ? createTextObject({ x: centerX, y: centerY })
+      : createShapeObject({
+          ...SHAPE_CONFIGS[type as 'rectangle' | 'circle'],
+          x: centerX,
+          y: centerY,
+        });
 
-      // 添加到图层列表
-      addLayer(activePage.id, {
-        name: layerName,
-        type,
-        visible: true,
-        locked: false,
-        opacity: 1,
-        fabricObjectId: object.id,
-      });
+    canvas.add(object);
+    canvas.setActiveObject(object);
+    canvas.requestRenderAll();
 
-      onSelectionChange(object);
-    }
+    addLayer(activePage.id, {
+      name: LAYER_NAMES[type],
+      type,
+      visible: true,
+      locked: false,
+      opacity: 1,
+      fabricObjectId: object.id,
+    });
+
+    onSelectionChange(object);
   };
 
   const handleImageUpload = () => {
-    const activePage = getActivePage();
     if (!activePage) return;
 
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file || !canvasRef.current) return;
@@ -98,11 +96,14 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const imgUrl = event.target?.result as string;
+        if (!imgUrl || !canvasRef.current) return;
+
         try {
-          const centerX = canvasRef.current!.width / 2;
-          const centerY = canvasRef.current!.height / 2;
-          const maxWidth = canvasRef.current!.width * 0.8;
-          const maxHeight = canvasRef.current!.height * 0.8;
+          const canvas = canvasRef.current;
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+          const maxWidth = canvas.width * 0.8;
+          const maxHeight = canvas.height * 0.8;
 
           const imageObj = await createImageObject({
             src: imgUrl,
@@ -112,11 +113,10 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
             maxHeight,
           });
 
-          canvasRef.current!.add(imageObj);
-          canvasRef.current!.setActiveObject(imageObj);
-          canvasRef.current!.requestRenderAll();
+          canvas.add(imageObj);
+          canvas.setActiveObject(imageObj);
+          canvas.requestRenderAll();
 
-          // 添加到图层列表
           addLayer(activePage.id, {
             name: file.name,
             type: 'image',

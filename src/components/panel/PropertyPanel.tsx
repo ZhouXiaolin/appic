@@ -3,7 +3,7 @@
  * 分组显示：类型、Position、Layout、Appearance、Fill、Stroke、Effects、Export
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { FabricObject } from 'fabric';
 
@@ -20,7 +20,8 @@ type PropertySection =
   | 'fill'
   | 'stroke'
   | 'effects'
-  | 'export';
+  | 'export'
+  | 'text';
 
 const SECTIONS: { id: PropertySection; label: string }[] = [
   { id: 'type', label: '类型' },
@@ -31,6 +32,7 @@ const SECTIONS: { id: PropertySection; label: string }[] = [
   { id: 'stroke', label: 'Stroke' },
   { id: 'effects', label: 'Effects' },
   { id: 'export', label: 'Export' },
+  { id: 'text', label: '文本' },
 ];
 
 export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPanelProps) {
@@ -52,11 +54,11 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
   useEffect(() => {
     if (!isDragging && selectedObject) {
       setCachedProps({
-        left: selectedObject.left || 0,
-        top: selectedObject.top || 0,
-        scaleX: selectedObject.scaleX || 1,
-        scaleY: selectedObject.scaleY || 1,
-        angle: selectedObject.angle || 0,
+        left: selectedObject.left ?? 0,
+        top: selectedObject.top ?? 0,
+        scaleX: selectedObject.scaleX ?? 1,
+        scaleY: selectedObject.scaleY ?? 1,
+        angle: selectedObject.angle ?? 0,
       });
     }
   }, [selectedObject, isDragging]);
@@ -64,36 +66,39 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
   // 当选中文本对象时，自动展开文本section
   useEffect(() => {
     if (isText && selectedObject) {
-      setExpandedSections(prev => new Set([...prev, 'text' as PropertySection]));
+      setExpandedSections(prev => {
+        if (prev.has('text')) return prev;
+        return new Set([...prev, 'text']);
+      });
     }
   }, [isText]);
 
-  const toggleSection = (sectionId: PropertySection) => {
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(sectionId)) {
-      newExpanded.delete(sectionId);
-    } else {
-      newExpanded.add(sectionId);
-    }
-    setExpandedSections(newExpanded);
-  };
+  const toggleSection = useCallback((sectionId: PropertySection) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  }, []);
 
-  const handlePropertyChange = (property: string, value: any) => {
+  const handlePropertyChange = useCallback((property: string, value: unknown) => {
     if (!selectedObject) return;
 
-    const canvas = selectedObject.canvas;
+    selectedObject.set(property, value);
+    selectedObject.canvas?.requestRenderAll();
+  }, [selectedObject]);
 
-    // 对于文本属性，只更新对象
-    if (property === 'text' && selectedObject.type === 'textbox') {
-      selectedObject.set('text', value);
-    } else {
-      selectedObject.set(property, value);
-    }
-
-    // 标记对象为已修改并请求重新渲染
-    if (canvas) {
-      canvas.requestRenderAll();
-    }
+  // 获取拖动状态下的属性值
+  const getProp = <K extends keyof typeof cachedProps>(
+    key: K,
+    fallback: number
+  ): number => {
+    if (isDragging) return cachedProps[key];
+    return (selectedObject?.[key] as number) ?? fallback;
   };
 
   if (!selectedObject) {
@@ -110,7 +115,7 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
 
   return (
     <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
-      {SECTIONS.map((section) => {
+      {SECTIONS.filter(section => section.id !== 'text' || isText).map((section) => {
         const isExpanded = expandedSections.has(section.id);
 
         return (
@@ -144,7 +149,7 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
                       <label className="block text-xs text-gray-500 mb-1">X</label>
                       <input
                         type="number"
-                        value={Math.round(isDragging ? cachedProps.left : (selectedObject.left || 0))}
+                        value={Math.round(getProp('left', 0))}
                         onChange={(e) =>
                           handlePropertyChange('left', Number(e.target.value))
                         }
@@ -156,7 +161,7 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
                       <label className="block text-xs text-gray-500 mb-1">Y</label>
                       <input
                         type="number"
-                        value={Math.round(isDragging ? cachedProps.top : (selectedObject.top || 0))}
+                        value={Math.round(getProp('top', 0))}
                         onChange={(e) =>
                           handlePropertyChange('top', Number(e.target.value))
                         }
@@ -174,11 +179,10 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
                       <input
                         type="number"
                         value={Math.round(
-                          (selectedObject.width || 0) * (isDragging ? cachedProps.scaleX : (selectedObject.scaleX || 1))
+                          (selectedObject.width ?? 0) * getProp('scaleX', 1)
                         )}
                         onChange={(e) => {
-                          const newScaleX =
-                            Number(e.target.value) / (selectedObject.width || 1);
+                          const newScaleX = Number(e.target.value) / (selectedObject.width ?? 1);
                           handlePropertyChange('scaleX', newScaleX);
                         }}
                         className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm
@@ -190,11 +194,10 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
                       <input
                         type="number"
                         value={Math.round(
-                          (selectedObject.height || 0) * (isDragging ? cachedProps.scaleY : (selectedObject.scaleY || 1))
+                          (selectedObject.height ?? 0) * getProp('scaleY', 1)
                         )}
                         onChange={(e) => {
-                          const newScaleY =
-                            Number(e.target.value) / (selectedObject.height || 1);
+                          const newScaleY = Number(e.target.value) / (selectedObject.height ?? 1);
                           handlePropertyChange('scaleY', newScaleY);
                         }}
                         className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm
@@ -205,7 +208,7 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
                       <label className="block text-xs text-gray-500 mb-1">旋转 (°)</label>
                       <input
                         type="number"
-                        value={Math.round((isDragging ? cachedProps.angle : (selectedObject.angle || 0)) % 360)}
+                        value={Math.round(getProp('angle', 0) % 360)}
                         onChange={(e) =>
                           handlePropertyChange('angle', Number(e.target.value))
                         }
@@ -225,7 +228,7 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
                         min="0"
                         max="1"
                         step="0.1"
-                        value={selectedObject.opacity || 1}
+                        value={selectedObject.opacity ?? 1}
                         onChange={(e) =>
                           handlePropertyChange('opacity', Number(e.target.value))
                         }
@@ -240,7 +243,7 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
                     <label className="block text-xs text-gray-500 mb-1">填充颜色</label>
                     <input
                       type="color"
-                      value={selectedObject.fill as string || '#000000'}
+                      value={(selectedObject.fill as string) ?? '#000000'}
                       onChange={(e) => handlePropertyChange('fill', e.target.value)}
                       className="w-full h-10 rounded cursor-pointer border border-gray-300"
                     />
@@ -253,7 +256,7 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
                       <label className="block text-xs text-gray-500 mb-1">描边颜色</label>
                       <input
                         type="color"
-                        value={(selectedObject.stroke as string) || '#000000'}
+                        value={(selectedObject.stroke as string) ?? '#000000'}
                         onChange={(e) =>
                           handlePropertyChange('stroke', e.target.value)
                         }
@@ -266,7 +269,7 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
                         type="number"
                         min="0"
                         max="50"
-                        value={selectedObject.strokeWidth || 0}
+                        value={selectedObject.strokeWidth ?? 0}
                         onChange={(e) =>
                           handlePropertyChange('strokeWidth', Number(e.target.value))
                         }
@@ -310,79 +313,62 @@ export function PropertyPanel({ selectedObject, isDragging = false }: PropertyPa
                     此对象将随设计一起导出
                   </div>
                 )}
+
+                {section.id === 'text' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">文本内容</label>
+                      <textarea
+                        key={(selectedObject as any).id || 'text'}
+                        defaultValue={(selectedObject as any).text ?? ''}
+                        onChange={(e) =>
+                          handlePropertyChange('text', e.target.value)
+                        }
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500
+                                 resize-none"
+                        rows={3}
+                        placeholder="输入文本内容"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">字号</label>
+                      <input
+                        type="number"
+                        min="8"
+                        max="200"
+                        value={(selectedObject as any).fontSize ?? 24}
+                        onChange={(e) =>
+                          handlePropertyChange('fontSize', Number(e.target.value))
+                        }
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">字体</label>
+                      <select
+                        value={(selectedObject as any).fontFamily ?? 'Arial'}
+                        onChange={(e) =>
+                          handlePropertyChange('fontFamily', e.target.value)
+                        }
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Arial">Arial</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Courier New">Courier New</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
         );
       })}
-
-      {/* 文本特有属性 */}
-      {isText && (
-        <div className="border-b border-gray-200">
-          <button
-            onClick={() => toggleSection('text' as PropertySection)}
-            className="w-full flex items-center justify-between px-4 py-3
-                       hover:bg-gray-50 transition-colors"
-          >
-            <span className="text-sm font-semibold text-gray-700">文本</span>
-            {expandedSections.has('text' as PropertySection) ? (
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-gray-500" />
-            )}
-          </button>
-          {expandedSections.has('text' as PropertySection) && (
-            <div className="px-4 pb-4 space-y-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">文本内容</label>
-                <textarea
-                  key={(selectedObject as any).id || 'text'}
-                  defaultValue={(selectedObject as any).text || ''}
-                  onChange={(e) =>
-                    handlePropertyChange('text', e.target.value)
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm
-                           focus:outline-none focus:ring-2 focus:ring-blue-500
-                           resize-none"
-                  rows={3}
-                  placeholder="输入文本内容"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">字号</label>
-                <input
-                  type="number"
-                  min="8"
-                  max="200"
-                  value={(selectedObject as any).fontSize || 24}
-                  onChange={(e) =>
-                    handlePropertyChange('fontSize', Number(e.target.value))
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm
-                           focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">字体</label>
-                <select
-                  value={(selectedObject as any).fontFamily || 'Arial'}
-                  onChange={(e) =>
-                    handlePropertyChange('fontFamily', e.target.value)
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm
-                           focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="Arial">Arial</option>
-                  <option value="Helvetica">Helvetica</option>
-                  <option value="Times New Roman">Times New Roman</option>
-                  <option value="Georgia">Georgia</option>
-                  <option value="Courier New">Courier New</option>
-                </select>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

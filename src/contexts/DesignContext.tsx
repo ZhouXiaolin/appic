@@ -57,7 +57,8 @@ function updateLayer(
 
 // Reducer
 function designReducer(state: DesignState, action: DesignAction): DesignState {
-  if (!state.design && action.type !== 'INIT_DESIGN') {
+  const design = state.design;
+  if (!design && action.type !== 'INIT_DESIGN') {
     return state;
   }
 
@@ -70,11 +71,11 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
     }
 
     case 'SET_DESIGN_NAME': {
-      if (!state.design) return state;
+      if (!design) return state;
       return {
         ...state,
         design: {
-          ...state.design,
+          ...design,
           name: action.payload,
           updatedAt: Date.now(),
         },
@@ -82,7 +83,7 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
     }
 
     case 'ADD_PAGE': {
-      if (!state.design) return state;
+      if (!design) return state;
       const newPage: Page = {
         id: generateId('page'),
         config: {
@@ -99,8 +100,8 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
       return {
         ...state,
         design: {
-          ...state.design,
-          pages: [...state.design.pages, newPage],
+          ...design,
+          pages: [...design.pages, newPage],
           activePageId: newPage.id,
           updatedAt: Date.now(),
         },
@@ -108,15 +109,15 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
     }
 
     case 'DELETE_PAGE': {
-      if (!state.design) return state;
-      const pages = state.design.pages.filter(p => p.id !== action.payload);
+      if (!design) return state;
+      const pages = design.pages.filter(p => p.id !== action.payload);
       if (pages.length === 0) return state; // 不能删除最后一个页面
       const activePageId =
-        state.design.activePageId === action.payload ? pages[0].id : state.design.activePageId;
+        design.activePageId === action.payload ? pages[0].id : design.activePageId;
       return {
         ...state,
         design: {
-          ...state.design,
+          ...design,
           pages,
           activePageId,
           updatedAt: Date.now(),
@@ -125,23 +126,20 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
     }
 
     case 'SET_ACTIVE_PAGE': {
-      if (!state.design) return state;
+      if (!design) return state;
       return {
         ...state,
-        design: {
-          ...state.design,
-          activePageId: action.payload,
-        },
+        design: { ...design, activePageId: action.payload },
       };
     }
 
     case 'UPDATE_PAGE_CONFIG': {
-      if (!state.design) return state;
+      if (!design) return state;
       return {
         ...state,
         design: {
-          ...state.design,
-          pages: updatePage(state.design.pages, action.payload.pageId, page => ({
+          ...design,
+          pages: updatePage(design.pages, action.payload.pageId, page => ({
             ...page,
             config: { ...page.config, ...action.payload.config },
             updatedAt: Date.now(),
@@ -152,12 +150,12 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
     }
 
     case 'ADD_LAYER': {
-      if (!state.design) return state;
+      if (!design) return state;
       return {
         ...state,
         design: {
-          ...state.design,
-          pages: updatePage(state.design.pages, action.payload.pageId, page => ({
+          ...design,
+          pages: updatePage(design.pages, action.payload.pageId, page => ({
             ...page,
             layers: [...page.layers, { ...action.payload.layer, id: generateId('layer') }],
             updatedAt: Date.now(),
@@ -168,12 +166,12 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
     }
 
     case 'DELETE_LAYER': {
-      if (!state.design) return state;
+      if (!design) return state;
       return {
         ...state,
         design: {
-          ...state.design,
-          pages: updatePage(state.design.pages, action.payload.pageId, page => ({
+          ...design,
+          pages: updatePage(design.pages, action.payload.pageId, page => ({
             ...page,
             layers: page.layers.filter(l => l.id !== action.payload.layerId),
             activeLayerId:
@@ -186,13 +184,13 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
     }
 
     case 'UPDATE_LAYER': {
-      if (!state.design) return state;
+      if (!design) return state;
       return {
         ...state,
         design: {
-          ...state.design,
+          ...design,
           pages: updateLayer(
-            state.design.pages,
+            design.pages,
             action.payload.pageId,
             action.payload.layerId,
             layer => ({ ...layer, ...action.payload.updates })
@@ -203,27 +201,27 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
     }
 
     case 'SET_ACTIVE_LAYER': {
-      if (!state.design) return state;
+      if (!design) return state;
       return {
         ...state,
         design: {
-          ...state.design,
-          pages: updatePage(state.design.pages, action.payload.pageId, page => ({
+          ...design,
+          pages: updatePage(design.pages, action.payload.pageId, page => ({
             ...page,
-            activeLayerId: action.payload.layerId || undefined,
+            activeLayerId: action.payload.layerId ?? undefined,
           })),
         },
       };
     }
 
     case 'TOGGLE_LAYER_VISIBILITY': {
-      if (!state.design) return state;
+      if (!design) return state;
       return {
         ...state,
         design: {
-          ...state.design,
+          ...design,
           pages: updateLayer(
-            state.design.pages,
+            design.pages,
             action.payload.pageId,
             action.payload.layerId,
             layer => ({ ...layer, visible: !layer.visible })
@@ -234,13 +232,13 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
     }
 
     case 'TOGGLE_LAYER_LOCK': {
-      if (!state.design) return state;
+      if (!design) return state;
       return {
         ...state,
         design: {
-          ...state.design,
+          ...design,
           pages: updateLayer(
-            state.design.pages,
+            design.pages,
             action.payload.pageId,
             action.payload.layerId,
             layer => ({ ...layer, locked: !layer.locked })
