@@ -41,7 +41,7 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
-  // 撤销/重做功能
+  // 撤销/重做功能 - pass current canvas ref value (will be null initially)
   const { saveHistory } = useHistory(canvasRef.current);
 
   // 计算缩放比例
@@ -189,110 +189,70 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isExportMenuOpen]);
 
+  // Shared handler for object selection
+  const handleSelectionChange = useCallback((selected: any) => {
+    if (!selected) return;
+    setSelectedObject(selected);
+    const fabricObjectId = (selected as any).id;
+    if (onObjectSelect && fabricObjectId) {
+      onObjectSelect(fabricObjectId);
+    }
+  }, [onObjectSelect, setSelectedObject]);
+
+  // Shared handler for history and auto-save
+  const handleHistorySave = useCallback(() => {
+    saveHistory();
+    saveCurrentPageData();
+  }, [saveHistory, saveCurrentPageData]);
+
   // 监听 Canvas 事件
   useCanvasEvents(canvasRef.current, {
-    'selection:created': (e) => {
-      const selected = e.selected?.[0];
-      if (selected) {
-        setSelectedObject(selected);
-        // 通知父组件更新图层列表选中状态
-        const fabricObjectId = (selected as any).id;
-        if (onObjectSelect && fabricObjectId) {
-          onObjectSelect(fabricObjectId);
-        }
-      }
-    },
-    'selection:updated': (e) => {
-      const selected = e.selected?.[0];
-      if (selected) {
-        setSelectedObject(selected);
-        // 通知父组件更新图层列表选中状态
-        const fabricObjectId = (selected as any).id;
-        if (onObjectSelect && fabricObjectId) {
-          onObjectSelect(fabricObjectId);
-        }
-      }
-    },
+    'selection:created': (e) => handleSelectionChange(e.selected?.[0]),
+    'selection:updated': (e) => handleSelectionChange(e.selected?.[0]),
     'selection:cleared': () => {
       clearSelection();
-      // 清除图层列表选中状态
-      if (onObjectSelect) {
-        onObjectSelect(null);
-      }
+      onObjectSelect?.(null);
     },
     'mouse:dblclick': (e) => {
-      const target = e.target;
-      if (target) {
-        setSelectedObject(target);
-      }
+      if (e.target) setSelectedObject(e.target);
     },
-    'object:moving': () => {
-      setIsDragging(true);
-    },
-    'object:scaling': () => {
-      setIsDragging(true);
-    },
-    'object:rotating': () => {
-      setIsDragging(true);
-    },
+    'object:moving': () => setIsDragging(true),
+    'object:scaling': () => setIsDragging(true),
+    'object:rotating': () => setIsDragging(true),
     'object:modified': () => {
       setIsDragging(false);
-      saveHistory();
-      // Auto-save canvas data to IndexedDB when object is modified
-      saveCurrentPageData();
+      handleHistorySave();
     },
-    'mouse:up': () => {
-      setIsDragging(false);
-    },
-    'object:added': () => {
-      saveHistory();
-      // Auto-save canvas data to IndexedDB when object is added
-      saveCurrentPageData();
-    },
-    'object:removed': () => {
-      saveHistory();
-      // Auto-save canvas data to IndexedDB when object is removed
-      saveCurrentPageData();
-    },
+    'mouse:up': () => setIsDragging(false),
+    'object:added': handleHistorySave,
+    'object:removed': handleHistorySave,
   });
 
   // 键盘事件监听 - 删除选中对象
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 只响应 Delete 或 Backspace 键
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
 
-      // 确保有活动的对象
-      const activeObject = canvasRef.current?.getActiveObject();
+      const canvas = canvasRef.current;
+      const activeObject = canvas?.getActiveObject();
       if (!activeObject) return;
 
-      // 获取对象的 fabricObjectId
       const fabricObjectId = (activeObject as any).id;
       if (!fabricObjectId) return;
 
-      // 从 canvas 中移除对象
-      canvasRef.current?.remove(activeObject);
-      canvasRef.current?.discardActiveObject();
-      canvasRef.current?.requestRenderAll();
+      canvas?.remove(activeObject);
+      canvas?.discardActiveObject();
+      canvas?.requestRenderAll();
 
-      // 清除选中状态
       clearSelection();
-
-      // 保存历史
       saveHistory();
-
-      // 保存 canvas 数据到 IndexedDB
       saveCurrentPageData();
-
-      // 通知父组件删除对应的图层
-      if (onObjectDelete) {
-        onObjectDelete(fabricObjectId);
-      }
+      onObjectDelete?.(fabricObjectId);
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canvasRef, clearSelection, saveHistory, onObjectDelete]);
+  }, [canvasRef, clearSelection, saveHistory, saveCurrentPageData, onObjectDelete]);
 
   return (
     <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-gray-100 relative">

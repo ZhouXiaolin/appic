@@ -2,18 +2,19 @@
  * 可编辑的设计标题组件
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useDesignStore } from '../../presentation/stores/useDesignStore';
+import { DEFAULT_DESIGN_NAME } from '../../constants/design';
 
 export function DesignTitle() {
   const design = useDesignStore(state => state.design);
   const setDesignName = useDesignStore(state => state.setDesignName);
   const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState(design?.name || '未命名设计');
+  const [title, setTitle] = useState(design?.name || DEFAULT_DESIGN_NAME);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setTitle(design?.name || '未命名设计');
+    setTitle(design?.name || DEFAULT_DESIGN_NAME);
   }, [design?.name]);
 
   useEffect(() => {
@@ -23,23 +24,23 @@ export function DesignTitle() {
     }
   }, [isEditing]);
 
-  const handleSave = () => {
+  function handleSave() {
     if (title.trim()) {
       setDesignName(title.trim());
     } else {
-      setTitle(design?.name || '未命名设计');
+      setTitle(design?.name || DEFAULT_DESIGN_NAME);
     }
     setIsEditing(false);
-  };
+  }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') {
       handleSave();
     } else if (e.key === 'Escape') {
-      setTitle(design?.name || '未命名设计');
+      setTitle(design?.name || DEFAULT_DESIGN_NAME);
       setIsEditing(false);
     }
-  };
+  }
 
   return (
     <div className="space-y-1">
@@ -58,7 +59,7 @@ export function DesignTitle() {
           onClick={() => setIsEditing(true)}
           className="px-2 py-1 text-lg font-semibold text-gray-800 cursor-pointer hover:bg-gray-50 rounded transition-colors"
         >
-          {design?.name || '未命名设计'}
+          {design?.name || DEFAULT_DESIGN_NAME}
         </div>
       )}
       <div className="text-xs text-gray-500 px-2">设计名称</div>

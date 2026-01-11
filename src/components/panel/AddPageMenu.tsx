@@ -3,7 +3,7 @@
  * 显示预设尺寸选项和自定义尺寸输入
  */
 
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDesignStore } from '../../presentation/stores/useDesignStore';
 import { ADD_SIZE_MENU_OPTIONS, DEFAULT_PAGE_NAME } from '../../constants/design';
 import type { SizeMenuOption } from '../../types/design.types';
@@ -13,6 +13,10 @@ interface AddPageMenuProps {
   onClose: () => void;
 }
 
+const DEFAULT_BACKGROUND_COLOR = '#ffffff';
+const MIN_CUSTOM_SIZE = 100;
+const MAX_CUSTOM_SIZE = 8000;
+
 export function AddPageMenu({ position, onClose }: AddPageMenuProps) {
   const addPage = useDesignStore(state => state.addPage);
   const [isCustom, setIsCustom] = useState(false);
@@ -20,7 +24,7 @@ export function AddPageMenu({ position, onClose }: AddPageMenuProps) {
   const [customHeight, setCustomHeight] = useState(600);
 
   // 点击外部关闭
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest('.add-page-menu')) {
@@ -31,31 +35,29 @@ export function AddPageMenu({ position, onClose }: AddPageMenuProps) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [onClose]);
 
-  const handleSelectPreset = (option: SizeMenuOption) => {
+  function createPage(width: number, height: number) {
+    addPage({
+      name: DEFAULT_PAGE_NAME,
+      width,
+      height,
+      backgroundColor: DEFAULT_BACKGROUND_COLOR,
+    });
+    onClose();
+  }
+
+  function handleSelectPreset(option: SizeMenuOption) {
     if (option.id === 'custom') {
       setIsCustom(true);
     } else {
-      addPage({
-        name: `${DEFAULT_PAGE_NAME}`,
-        width: option.width,
-        height: option.height,
-        backgroundColor: '#ffffff',
-      });
-      onClose();
+      createPage(option.width, option.height);
     }
-  };
+  }
 
-  const handleAddCustom = () => {
-    if (customWidth > 0 && customHeight > 0) {
-      addPage({
-        name: `${DEFAULT_PAGE_NAME}`,
-        width: customWidth,
-        height: customHeight,
-        backgroundColor: '#ffffff',
-      });
-      onClose();
+  function handleAddCustom() {
+    if (customWidth >= MIN_CUSTOM_SIZE && customHeight >= MIN_CUSTOM_SIZE) {
+      createPage(customWidth, customHeight);
     }
-  };
+  }
 
   return (
     <div
@@ -89,11 +91,11 @@ export function AddPageMenu({ position, onClose }: AddPageMenuProps) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-600 mb-1.5">宽度 (px)</label>
+              <label className="block text-xs text-gray-600 mb-1.5">宽度</label>
               <input
                 type="number"
-                min="100"
-                max="8000"
+                min={MIN_CUSTOM_SIZE}
+                max={MAX_CUSTOM_SIZE}
                 value={customWidth}
                 onChange={(e) => setCustomWidth(Number(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg
@@ -101,11 +103,11 @@ export function AddPageMenu({ position, onClose }: AddPageMenuProps) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1.5">高度 (px)</label>
+              <label className="block text-xs text-gray-600 mb-1.5">高度</label>
               <input
                 type="number"
-                min="100"
-                max="8000"
+                min={MIN_CUSTOM_SIZE}
+                max={MAX_CUSTOM_SIZE}
                 value={customHeight}
                 onChange={(e) => setCustomHeight(Number(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg
