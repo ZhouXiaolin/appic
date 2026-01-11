@@ -36,6 +36,25 @@ const initialState: DesignState = {
   canvasRefs: new Map(),
 };
 
+// 辅助函数：更新指定页面的属性
+function updatePage(pages: Page[], pageId: string, updater: (page: Page) => Page): Page[] {
+  return pages.map(page => (page.id === pageId ? updater(page) : page));
+}
+
+// 辅助函数：更新指定页面的指定图层
+function updateLayer(
+  pages: Page[],
+  pageId: string,
+  layerId: string,
+  updater: (layer: Layer) => Layer
+): Page[] {
+  return pages.map(page =>
+    page.id === pageId
+      ? { ...page, layers: page.layers.map(layer => (layer.id === layerId ? updater(layer) : layer)) }
+      : page
+  );
+}
+
 // Reducer
 function designReducer(state: DesignState, action: DesignAction): DesignState {
   if (!state.design && action.type !== 'INIT_DESIGN') {
@@ -92,9 +111,8 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
       if (!state.design) return state;
       const pages = state.design.pages.filter(p => p.id !== action.payload);
       if (pages.length === 0) return state; // 不能删除最后一个页面
-      const activePageId = state.design.activePageId === action.payload
-        ? pages[0].id
-        : state.design.activePageId;
+      const activePageId =
+        state.design.activePageId === action.payload ? pages[0].id : state.design.activePageId;
       return {
         ...state,
         design: {
@@ -123,15 +141,11 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
         ...state,
         design: {
           ...state.design,
-          pages: state.design.pages.map(page =>
-            page.id === action.payload.pageId
-              ? {
-                  ...page,
-                  config: { ...page.config, ...action.payload.config },
-                  updatedAt: Date.now(),
-                }
-              : page
-          ),
+          pages: updatePage(state.design.pages, action.payload.pageId, page => ({
+            ...page,
+            config: { ...page.config, ...action.payload.config },
+            updatedAt: Date.now(),
+          })),
           updatedAt: Date.now(),
         },
       };
@@ -143,18 +157,11 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
         ...state,
         design: {
           ...state.design,
-          pages: state.design.pages.map(page =>
-            page.id === action.payload.pageId
-              ? {
-                  ...page,
-                  layers: [
-                    ...page.layers,
-                    { ...action.payload.layer, id: generateId('layer') },
-                  ],
-                  updatedAt: Date.now(),
-                }
-              : page
-          ),
+          pages: updatePage(state.design.pages, action.payload.pageId, page => ({
+            ...page,
+            layers: [...page.layers, { ...action.payload.layer, id: generateId('layer') }],
+            updatedAt: Date.now(),
+          })),
           updatedAt: Date.now(),
         },
       };
@@ -166,18 +173,13 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
         ...state,
         design: {
           ...state.design,
-          pages: state.design.pages.map(page =>
-            page.id === action.payload.pageId
-              ? {
-                  ...page,
-                  layers: page.layers.filter(l => l.id !== action.payload.layerId),
-                  activeLayerId: page.activeLayerId === action.payload.layerId
-                    ? undefined
-                    : page.activeLayerId,
-                  updatedAt: Date.now(),
-                }
-              : page
-          ),
+          pages: updatePage(state.design.pages, action.payload.pageId, page => ({
+            ...page,
+            layers: page.layers.filter(l => l.id !== action.payload.layerId),
+            activeLayerId:
+              page.activeLayerId === action.payload.layerId ? undefined : page.activeLayerId,
+            updatedAt: Date.now(),
+          })),
           updatedAt: Date.now(),
         },
       };
@@ -189,18 +191,11 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
         ...state,
         design: {
           ...state.design,
-          pages: state.design.pages.map(page =>
-            page.id === action.payload.pageId
-              ? {
-                  ...page,
-                  layers: page.layers.map(layer =>
-                    layer.id === action.payload.layerId
-                      ? { ...layer, ...action.payload.updates }
-                      : layer
-                  ),
-                  updatedAt: Date.now(),
-                }
-              : page
+          pages: updateLayer(
+            state.design.pages,
+            action.payload.pageId,
+            action.payload.layerId,
+            layer => ({ ...layer, ...action.payload.updates })
           ),
           updatedAt: Date.now(),
         },
@@ -213,14 +208,10 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
         ...state,
         design: {
           ...state.design,
-          pages: state.design.pages.map(page =>
-            page.id === action.payload.pageId
-              ? {
-                  ...page,
-                  activeLayerId: action.payload.layerId || undefined,
-                }
-              : page
-          ),
+          pages: updatePage(state.design.pages, action.payload.pageId, page => ({
+            ...page,
+            activeLayerId: action.payload.layerId || undefined,
+          })),
         },
       };
     }
@@ -231,18 +222,11 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
         ...state,
         design: {
           ...state.design,
-          pages: state.design.pages.map(page =>
-            page.id === action.payload.pageId
-              ? {
-                  ...page,
-                  layers: page.layers.map(layer =>
-                    layer.id === action.payload.layerId
-                      ? { ...layer, visible: !layer.visible }
-                      : layer
-                  ),
-                  updatedAt: Date.now(),
-                }
-              : page
+          pages: updateLayer(
+            state.design.pages,
+            action.payload.pageId,
+            action.payload.layerId,
+            layer => ({ ...layer, visible: !layer.visible })
           ),
           updatedAt: Date.now(),
         },
@@ -255,18 +239,11 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
         ...state,
         design: {
           ...state.design,
-          pages: state.design.pages.map(page =>
-            page.id === action.payload.pageId
-              ? {
-                  ...page,
-                  layers: page.layers.map(layer =>
-                    layer.id === action.payload.layerId
-                      ? { ...layer, locked: !layer.locked }
-                      : layer
-                  ),
-                  updatedAt: Date.now(),
-                }
-              : page
+          pages: updateLayer(
+            state.design.pages,
+            action.payload.pageId,
+            action.payload.layerId,
+            layer => ({ ...layer, locked: !layer.locked })
           ),
           updatedAt: Date.now(),
         },

@@ -1,15 +1,48 @@
 import type { Canvas } from 'fabric';
 import type { ExportOptions, ExportFormat } from '../../types/canvas.types';
 
+const MULTIPLIER = 2;
+
+// 导出格式配置
+const EXPORT_CONFIG = {
+  png: { extension: 'png', format: 'png' as const, quality: 1 },
+  jpeg: { extension: 'jpg', format: 'jpeg' as const, quality: 1 },
+  json: { extension: 'json', mimeType: 'application/json' },
+  svg: { extension: 'svg', mimeType: 'image/svg+xml' },
+} as const;
+
+/**
+ * 触发文件下载
+ */
+function triggerDownload(dataOrUrl: string, filename: string, mimeType?: string): void {
+  const link = document.createElement('a');
+  document.body.appendChild(link);
+
+  if (mimeType) {
+    const blob = new Blob([dataOrUrl], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  } else {
+    link.href = dataOrUrl;
+    link.download = filename;
+    link.click();
+  }
+
+  document.body.removeChild(link);
+}
+
 /**
  * 导出为图片（PNG/JPEG）
  */
-function exportAsImage(canvas: Canvas, options: ExportOptions): string {
-  const format = options.format === 'jpeg' ? 'jpeg' : 'png';
+function exportAsImage(canvas: Canvas, format: 'png' | 'jpeg'): string {
+  const config = EXPORT_CONFIG[format];
   return canvas.toDataURL({
-    format,
-    quality: options.quality || 1,
-    multiplier: options.multiplier || 2,
+    format: config.format,
+    quality: config.quality,
+    multiplier: MULTIPLIER,
   });
 }
 
@@ -17,8 +50,7 @@ function exportAsImage(canvas: Canvas, options: ExportOptions): string {
  * 导出为 JSON
  */
 function exportAsJSON(canvas: Canvas): string {
-  const json = canvas.toJSON();
-  return JSON.stringify(json, null, 2);
+  return JSON.stringify(canvas.toJSON(), null, 2);
 }
 
 /**
@@ -29,56 +61,33 @@ function exportAsSVG(canvas: Canvas): string {
 }
 
 /**
- * 下载文件（用于文本数据：JSON、SVG）
- */
-function downloadTextFile(data: string, filename: string, mimeType: string): void {
-  const blob = new Blob([data], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-/**
- * 下载图片（用于 Data URL）
- */
-function downloadImageFile(dataUrl: string, filename: string): void {
-  const link = document.createElement('a');
-  link.href = dataUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-/**
  * 导出 Canvas（主函数）
  */
 export function exportCanvas(canvas: Canvas, format: ExportFormat): void {
   switch (format) {
-    case 'png':
-      const pngData = exportAsImage(canvas, { format: 'png', quality: 1, multiplier: 2 });
-      downloadImageFile(pngData, 'design.png');
+    case 'png': {
+      const dataUrl = exportAsImage(canvas, 'png');
+      triggerDownload(dataUrl, `design.${EXPORT_CONFIG.png.extension}`);
       break;
+    }
 
-    case 'jpeg':
-      const jpegData = exportAsImage(canvas, { format: 'jpeg', quality: 1, multiplier: 2 });
-      downloadImageFile(jpegData, 'design.jpg');
+    case 'jpeg': {
+      const dataUrl = exportAsImage(canvas, 'jpeg');
+      triggerDownload(dataUrl, `design.${EXPORT_CONFIG.jpeg.extension}`);
       break;
+    }
 
-    case 'json':
-      const jsonData = exportAsJSON(canvas);
-      downloadTextFile(jsonData, 'design.json', 'application/json');
+    case 'json': {
+      const data = exportAsJSON(canvas);
+      triggerDownload(data, `design.${EXPORT_CONFIG.json.extension}`, EXPORT_CONFIG.json.mimeType);
       break;
+    }
 
-    case 'svg':
-      const svgData = exportAsSVG(canvas);
-      downloadTextFile(svgData, 'design.svg', 'image/svg+xml');
+    case 'svg': {
+      const data = exportAsSVG(canvas);
+      triggerDownload(data, `design.${EXPORT_CONFIG.svg.extension}`, EXPORT_CONFIG.svg.mimeType);
       break;
+    }
 
     default:
       throw new Error(`Unsupported export format: ${format}`);

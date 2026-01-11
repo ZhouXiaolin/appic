@@ -153,18 +153,14 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
           width={activePage.config.width}
           height={activePage.config.height}
           onReady={(canvas) => {
-            // 监听选择事件
-            canvas.on('selection:created', (e) => {
-              const selected = e.selected?.[0];
-              onSelectionChange(selected || null);
-            });
-            canvas.on('selection:updated', (e) => {
-              const selected = e.selected?.[0];
-              onSelectionChange(selected || null);
-            });
-            canvas.on('selection:cleared', () => {
-              onSelectionChange(null);
-            });
+            // 监听选择事件并通知父组件
+            const handleSelection = (e: any) => {
+              const selected = e.selected?.[0] || null;
+              onSelectionChange(selected);
+            };
+            canvas.on('selection:created', handleSelection);
+            canvas.on('selection:updated', handleSelection);
+            canvas.on('selection:cleared', () => onSelectionChange(null));
           }}
         />
       </div>

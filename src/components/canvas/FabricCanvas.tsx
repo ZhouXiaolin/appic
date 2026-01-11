@@ -11,6 +11,8 @@ interface FabricCanvasProps {
   onReady?: (canvas: Canvas) => void;
 }
 
+const PADDING = 64;
+
 interface ScaleInfo {
   scale: number;
   width: number;
@@ -32,23 +34,17 @@ export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanva
 
     const containerWidth = containerRef.current.clientWidth;
     const containerHeight = containerRef.current.clientHeight;
+    const availableWidth = containerWidth - PADDING;
+    const availableHeight = containerHeight - PADDING;
 
-    // 留出一些边距 (每个方向 32px，总共 64px)
-    const padding = 64;
-    const availableWidth = containerWidth - padding;
-    const availableHeight = containerHeight - padding;
-
-    // 计算宽高比
+    // 根据宽高比选择合适的缩放基准
     const canvasAspectRatio = width / height;
     const containerAspectRatio = availableWidth / availableHeight;
 
     let scale: number;
-
     if (canvasAspectRatio > containerAspectRatio) {
-      // 画布更宽，以宽度为准
       scale = availableWidth / width;
     } else {
-      // 画布更高，以高度为准
       scale = availableHeight / height;
     }
 
@@ -115,49 +111,35 @@ export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanva
   useCanvasEvents(canvasRef.current, {
     'selection:created': (e) => {
       const selected = e.selected?.[0];
-      if (selected) {
-        setSelectedObject(selected);
-      }
+      if (selected) setSelectedObject(selected);
     },
     'selection:updated': (e) => {
       const selected = e.selected?.[0];
-      if (selected) {
-        setSelectedObject(selected);
-      }
+      if (selected) setSelectedObject(selected);
     },
     'selection:cleared': () => {
       clearSelection();
     },
-    'object:modified': () => {
-      saveHistory();
-    },
-    'object:added': () => {
-      saveHistory();
-    },
-    'object:removed': () => {
-      saveHistory();
-    },
+    'object:modified': () => saveHistory(),
+    'object:added': () => saveHistory(),
+    'object:removed': () => saveHistory(),
   });
 
   return (
     <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-gray-100">
-      {/* 外层容器：缩放后的尺寸 */}
       <div
         style={{
-          width: `${width * scaleInfo.scale}px`,
-          height: `${height * scaleInfo.scale}px`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          width: width * scaleInfo.scale,
+          height: height * scaleInfo.scale,
         }}
+        className="flex items-center justify-center"
       >
-        {/* 内层容器：原始尺寸，使用 transform scale */}
         <div
           ref={canvasInnerWrapperRef}
           className="bg-white shadow-lg relative"
           style={{
-            width: `${width}px`,
-            height: `${height}px`,
+            width,
+            height,
             transform: `scale(${scaleInfo.scale})`,
             transformOrigin: 'center center',
           }}
