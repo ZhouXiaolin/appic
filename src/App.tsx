@@ -12,24 +12,18 @@ function AppContent() {
   const { createDesign } = useDesign();
   const { isDragging } = useCanvas();
   const [selectedObject, setSelectedObject] = useState<FabricObject | null>(null);
-  const [updateKey, setUpdateKey] = useState(0);
 
   // 初始化：创建默认设计（但不创建默认页面）
   useEffect(() => {
     createDesign('我的设计');
   }, [createDesign]);
 
-  const handleObjectModified = () => {
-    // 强制更新 PropertyPanel
-    setUpdateKey(prev => prev + 1);
-  };
-
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <EditorLayout
         left={<LeftPanel />}
-        center={<CanvasArea onSelectionChange={setSelectedObject} onObjectModified={handleObjectModified} />}
-        right={<PropertyPanel key={updateKey} selectedObject={selectedObject} isDragging={isDragging} />}
+        center={<CanvasArea onSelectionChange={setSelectedObject} />}
+        right={<PropertyPanel selectedObject={selectedObject} isDragging={isDragging} />}
       />
     </div>
   );

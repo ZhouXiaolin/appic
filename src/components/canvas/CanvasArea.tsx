@@ -12,10 +12,9 @@ import type { Object as FabricObject } from 'fabric';
 
 interface CanvasAreaProps {
   onSelectionChange: (obj: FabricObject | null) => void;
-  onObjectModified?: () => void;
 }
 
-export function CanvasArea({ onSelectionChange, onObjectModified }: CanvasAreaProps) {
+export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
   const { getActivePage, addLayer, setCanvasRef } = useDesign();
   const { canvasRef } = useCanvas();
 
@@ -165,15 +164,6 @@ export function CanvasArea({ onSelectionChange, onObjectModified }: CanvasAreaPr
             canvas.on('selection:created', handleSelection);
             canvas.on('selection:updated', handleSelection);
             canvas.on('selection:cleared', () => onSelectionChange(null));
-
-            // 监听对象修改事件，触发 PropertyPanel 更新
-            const handleObjectModified = () => {
-              onObjectModified?.();
-            };
-            canvas.on('object:modified', handleObjectModified);
-            canvas.on('object:scaling', handleObjectModified);
-            canvas.on('object:moving', handleObjectModified);
-            canvas.on('object:rotating', handleObjectModified);
           }}
         />
       </div>
