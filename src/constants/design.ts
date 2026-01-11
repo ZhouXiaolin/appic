@@ -30,6 +30,12 @@ export const PAGE_SIZE_PRESETS: PageSizePreset[] = [
 
 // 添加页面时的尺寸菜单选项（精选常用尺寸）
 export const ADD_SIZE_MENU_OPTIONS: SizeMenuOption[] = [
+  // 移动设备尺寸（优先显示）
+  { id: 'mobile-portrait-1', label: '手机竖屏', width: 1242, height: 2688, description: '1242 × 2688' },
+  { id: 'mobile-landscape-1', label: '手机横屏', width: 2688, height: 1242, description: '2688 × 1242' },
+  { id: 'mobile-portrait-2', label: '手机 Pro 竖屏', width: 1284, height: 2778, description: '1284 × 2778' },
+  { id: 'mobile-landscape-2', label: '手机 Pro 横屏', width: 2778, height: 1284, description: '2778 × 1284' },
+  // 社交媒体尺寸
   { id: 'instagram', label: 'Instagram Post', width: 1080, height: 1080, description: '1080 × 1080' },
   { id: 'story', label: 'Instagram Story', width: 1080, height: 1920, description: '1080 × 1920' },
   { id: 'youtube', label: 'YouTube Thumbnail', width: 1280, height: 720, description: '1280 × 720' },
