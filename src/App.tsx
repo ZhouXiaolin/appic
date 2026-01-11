@@ -9,29 +9,26 @@ import { useDesign } from './contexts/DesignContext';
 import type { Object as FabricObject } from 'fabric';
 
 function AppContent() {
-  const { createDesign, addPage } = useDesign();
+  const { createDesign } = useDesign();
   const [selectedObject, setSelectedObject] = useState<FabricObject | null>(null);
+  const [updateKey, setUpdateKey] = useState(0);
 
-  // 初始化：创建默认设计和页面
+  // 初始化：创建默认设计（但不创建默认页面）
   useEffect(() => {
     createDesign('我的设计');
-    // 稍后添加第一个页面，确保设计已创建
-    setTimeout(() => {
-      addPage({
-        name: '页面 1',
-        width: 800,
-        height: 600,
-        backgroundColor: '#ffffff',
-      });
-    }, 100);
-  }, [createDesign, addPage]);
+  }, [createDesign]);
+
+  const handleObjectModified = () => {
+    // 强制更新 PropertyPanel
+    setUpdateKey(prev => prev + 1);
+  };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <EditorLayout
         left={<LeftPanel />}
-        center={<CanvasArea onSelectionChange={setSelectedObject} />}
-        right={<PropertyPanel selectedObject={selectedObject} />}
+        center={<CanvasArea onSelectionChange={setSelectedObject} onObjectModified={handleObjectModified} />}
+        right={<PropertyPanel key={updateKey} selectedObject={selectedObject} />}
       />
     </div>
   );

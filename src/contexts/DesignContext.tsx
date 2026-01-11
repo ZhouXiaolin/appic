@@ -287,6 +287,7 @@ interface DesignContextValue {
   getActivePage: () => Page | null;
   getActiveLayer: () => Layer | null;
   getCanvas: (pageId: string) => Canvas | null;
+  setCanvasRef: (pageId: string, canvas: Canvas | null) => void;
 }
 
 // Context
@@ -356,13 +357,68 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
 
   // 切换图层可见性
   const toggleLayerVisibility = useCallback((pageId: string, layerId: string) => {
+    // 获取当前页面
+    const currentPage = state.design?.pages.find(p => p.id === pageId);
+    if (!currentPage) return;
+
+    // 找到对应的图层
+    const layer = currentPage.layers.find(l => l.id === layerId);
+    if (!layer || !layer.fabricObjectId) return;
+
+    // 计算新的可见性状态（取反）
+    const newVisible = !layer.visible;
+
+    // 先更新状态
     dispatch({ type: 'TOGGLE_LAYER_VISIBILITY', payload: { pageId, layerId } });
-  }, []);
+
+    // 然后操作 Fabric 对象
+    const canvas = state.canvasRefs.get(pageId);
+    if (!canvas) return;
+
+    // 在 Fabric canvas 中查找对应的对象
+    const fabricObject = canvas.getObjects().find(obj => obj.id === layer.fabricObjectId);
+    if (fabricObject) {
+      fabricObject.set('visible', newVisible);
+      fabricObject.set('selectable', newVisible);
+      fabricObject.set('evented', newVisible);
+      canvas.requestRenderAll();
+    }
+  }, [state.design, state.canvasRefs]);
 
   // 切换图层锁定
   const toggleLayerLock = useCallback((pageId: string, layerId: string) => {
+    // 获取当前页面
+    const currentPage = state.design?.pages.find(p => p.id === pageId);
+    if (!currentPage) return;
+
+    // 找到对应的图层
+    const layer = currentPage.layers.find(l => l.id === layerId);
+    if (!layer || !layer.fabricObjectId) return;
+
+    // 计算新的锁定状态（取反）
+    const newLocked = !layer.locked;
+
+    // 先更新状态
     dispatch({ type: 'TOGGLE_LAYER_LOCK', payload: { pageId, layerId } });
-  }, []);
+
+    // 然后操作 Fabric 对象
+    const canvas = state.canvasRefs.get(pageId);
+    if (!canvas) return;
+
+    // 在 Fabric canvas 中查找对应的对象
+    const fabricObject = canvas.getObjects().find(obj => obj.id === layer.fabricObjectId);
+    if (fabricObject) {
+      // 锁定后不可选择、不可移动、不可编辑
+      fabricObject.set('selectable', !newLocked);
+      fabricObject.set('evented', !newLocked);
+      fabricObject.set('lockMovementX', newLocked);
+      fabricObject.set('lockMovementY', newLocked);
+      fabricObject.set('lockRotation', newLocked);
+      fabricObject.set('lockScalingX', newLocked);
+      fabricObject.set('lockScalingY', newLocked);
+      canvas.requestRenderAll();
+    }
+  }, [state.design, state.canvasRefs]);
 
   // 获取活动页面
   const getActivePage = useCallback((): Page | null => {
@@ -382,6 +438,11 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     return state.canvasRefs.get(pageId) || null;
   }, [state.canvasRefs]);
 
+  // 设置 Canvas ref
+  const setCanvasRef = useCallback((pageId: string, canvas: Canvas | null) => {
+    dispatch({ type: 'SET_CANVAS_REF', payload: { pageId, canvas } });
+  }, []);
+
   const value: DesignContextValue = {
     state,
     dispatch,
@@ -400,6 +461,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     getActivePage,
     getActiveLayer,
     getCanvas,
+    setCanvasRef,
   };
 
   return <DesignContext.Provider value={value}>{children}</DesignContext.Provider>;

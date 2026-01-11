@@ -12,10 +12,11 @@ import type { Object as FabricObject } from 'fabric';
 
 interface CanvasAreaProps {
   onSelectionChange: (obj: FabricObject | null) => void;
+  onObjectModified?: () => void;
 }
 
-export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
-  const { getActivePage, addLayer } = useDesign();
+export function CanvasArea({ onSelectionChange, onObjectModified }: CanvasAreaProps) {
+  const { getActivePage, addLayer, setCanvasRef } = useDesign();
   const { canvasRef } = useCanvas();
 
   const activePage = getActivePage();
@@ -153,6 +154,9 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
           width={activePage.config.width}
           height={activePage.config.height}
           onReady={(canvas) => {
+            // 设置 canvas ref 到 DesignContext
+            setCanvasRef(activePage.id, canvas);
+
             // 监听选择事件并通知父组件
             const handleSelection = (e: any) => {
               const selected = e.selected?.[0] || null;
@@ -161,6 +165,15 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
             canvas.on('selection:created', handleSelection);
             canvas.on('selection:updated', handleSelection);
             canvas.on('selection:cleared', () => onSelectionChange(null));
+
+            // 监听对象修改事件，触发 PropertyPanel 更新
+            const handleObjectModified = () => {
+              onObjectModified?.();
+            };
+            canvas.on('object:modified', handleObjectModified);
+            canvas.on('object:scaling', handleObjectModified);
+            canvas.on('object:moving', handleObjectModified);
+            canvas.on('object:rotating', handleObjectModified);
           }}
         />
       </div>
