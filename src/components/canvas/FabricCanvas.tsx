@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Canvas } from 'fabric';
+import { Download } from 'lucide-react';
 import { useCanvas } from '../../contexts/CanvasContext';
 import { useCanvasEvents } from '../../hooks/useCanvasEvents';
 import { useHistory } from '../../hooks/useHistory';
 import { defaultCanvasConfig } from '../../constants/canvas';
+import { exportCanvas } from '../../utils/fabric/exportUtils';
+import type { ExportFormat } from '../../types/canvas.types';
 
 interface FabricCanvasProps {
   width?: number;
@@ -12,6 +15,14 @@ interface FabricCanvasProps {
 }
 
 const PADDING = 64;
+
+// 导出格式配置
+const exportFormats: { format: ExportFormat; label: string; extension: string }[] = [
+  { format: 'png', label: 'PNG 图片', extension: 'png' },
+  { format: 'jpeg', label: 'JPEG 图片', extension: 'jpg' },
+  { format: 'json', label: 'JSON 数据', extension: 'json' },
+  { format: 'svg', label: 'SVG 矢量', extension: 'svg' },
+];
 
 interface ScaleInfo {
   scale: number;
@@ -22,8 +33,10 @@ interface ScaleInfo {
 export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasInnerWrapperRef = useRef<HTMLDivElement>(null);
-  const { dispatch, canvasRef, setSelectedObject, clearSelection } = useCanvas();
+  const { dispatch, canvasRef, setSelectedObject, clearSelection, state } = useCanvas();
   const [scaleInfo, setScaleInfo] = useState<ScaleInfo>({ scale: 1, width, height });
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   // 撤销/重做功能
   const { saveHistory } = useHistory(canvasRef.current);
@@ -107,6 +120,30 @@ export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanva
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 导出处理函数
+  const handleExport = (format: ExportFormat) => {
+    if (!canvasRef.current) return;
+    exportCanvas(canvasRef.current, format);
+    setIsExportMenuOpen(false);
+  };
+
+  // 点击外部关闭菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setIsExportMenuOpen(false);
+      }
+    };
+
+    if (isExportMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExportMenuOpen]);
+
   // 监听 Canvas 事件
   useCanvasEvents(canvasRef.current, {
     'selection:created': (e) => {
@@ -126,7 +163,7 @@ export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanva
   });
 
   return (
-    <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-gray-100">
+    <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-gray-100 relative">
       <div
         style={{
           width: width * scaleInfo.scale,
@@ -144,6 +181,51 @@ export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanva
             transformOrigin: 'center center',
           }}
         />
+      </div>
+
+      {/* 右下角导出按钮 */}
+      <div className="absolute bottom-4 right-4" ref={exportMenuRef}>
+        <button
+          onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+          disabled={!state.canvas}
+          className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-blue-50
+                     rounded-lg shadow-md hover:shadow-lg border border-gray-200
+                     transition-all duration-200
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     disabled:hover:bg-white group"
+          title="导出设计"
+        >
+          <Download className="w-4 h-4 text-gray-600 group-hover:text-blue-600" />
+          <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">
+            导出
+          </span>
+        </button>
+
+        {/* 导出选项弹出菜单 */}
+        {isExportMenuOpen && (
+          <div className="absolute bottom-full right-0 mb-2 w-56 bg-white rounded-lg
+                          shadow-xl border border-gray-200 overflow-hidden">
+            <div className="py-1">
+              {exportFormats.map((item) => (
+                <button
+                  key={item.format}
+                  onClick={() => handleExport(item.format)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5
+                             text-left hover:bg-blue-50 transition-colors
+                             group"
+                >
+                  <Download className="w-4 h-4 text-gray-500 group-hover:text-blue-600" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-700 group-hover:text-blue-700">
+                      {item.label}
+                    </div>
+                    <div className="text-xs text-gray-500">.{item.extension}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
