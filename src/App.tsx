@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { DesignProvider } from './contexts/DesignContext';
 import { CanvasProvider, useCanvas } from './contexts/CanvasContext';
 import { EditorLayout } from './components/layout/EditorLayout';
@@ -6,12 +6,10 @@ import { LeftPanel } from './components/panel/LeftPanel';
 import { CanvasArea } from './components/canvas/CanvasArea';
 import { PropertyPanel } from './components/panel/PropertyPanel';
 import { useDesign } from './contexts/DesignContext';
-import type { Object as FabricObject } from 'fabric';
 
 function AppContent() {
   const { createDesign } = useDesign();
-  const { isDragging } = useCanvas();
-  const [selectedObject, setSelectedObject] = useState<FabricObject | null>(null);
+  const { isDragging, selectedObject } = useCanvas();
 
   // 初始化：创建默认设计（但不创建默认页面）
   useEffect(() => {
@@ -22,7 +20,7 @@ function AppContent() {
     <div className="h-screen flex flex-col bg-gray-50">
       <EditorLayout
         left={<LeftPanel />}
-        center={<CanvasArea onSelectionChange={setSelectedObject} />}
+        center={<CanvasArea />}
         right={<PropertyPanel selectedObject={selectedObject} isDragging={isDragging} />}
       />
     </div>

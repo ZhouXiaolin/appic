@@ -2,17 +2,13 @@
  * 画布区域组件
  * 包含 FabricCanvas 和底部工具栏
  */
+import { useCallback } from 'react';
 import { useDesign } from '../../contexts/DesignContext';
 import { useCanvas } from '../../contexts/CanvasContext';
 import { FabricCanvas } from './FabricCanvas';
 import { BottomToolbar } from '../toolbar/BottomToolbar';
 import { createTextObject, createShapeObject, createImageObject } from '../../utils/fabric/objectFactory';
 import type { CanvasObjectTypeValue } from '../../types/canvas.types';
-import type { Object as FabricObject } from 'fabric';
-
-interface CanvasAreaProps {
-  onSelectionChange: (obj: FabricObject | null) => void;
-}
 
 type ItemType = 'text' | 'image' | 'rectangle' | 'circle' | 'triangle';
 
@@ -34,11 +30,22 @@ const LAYER_NAMES: Record<string, string> = {
   circle: '圆形',
 };
 
-export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
-  const { getActivePage, addLayer, setCanvasRef } = useDesign();
+export function CanvasArea() {
+  const { getActivePage, addLayer, setCanvasRef, deleteLayer } = useDesign();
   const { canvasRef } = useCanvas();
 
   const activePage = getActivePage();
+
+  // 处理删除对象（从 Fabric Canvas 触发）
+  const handleObjectDelete = useCallback((fabricObjectId: string) => {
+    if (!activePage) return;
+
+    // 找到对应的图层并删除
+    const layerToDelete = activePage.layers.find(l => l.fabricObjectId === fabricObjectId);
+    if (layerToDelete) {
+      deleteLayer(activePage.id, layerToDelete.id);
+    }
+  }, [activePage, deleteLayer]);
 
   const handleAddItem = async (type: ItemType) => {
     if (!canvasRef.current || !activePage) return;
@@ -79,8 +86,6 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
       opacity: 1,
       fabricObjectId: object.id,
     });
-
-    onSelectionChange(object);
   };
 
   const handleImageUpload = () => {
@@ -127,8 +132,6 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
             opacity: 1,
             fabricObjectId: imageObj.id,
           });
-
-          onSelectionChange(imageObj);
         } catch (error) {
           console.error('Failed to load image:', error);
           alert(`图片加载失败: ${error}`);
@@ -157,16 +160,8 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
           onReady={(canvas) => {
             // 设置 canvas ref 到 DesignContext
             setCanvasRef(activePage.id, canvas);
-
-            // 监听选择事件并通知父组件
-            const handleSelection = (e: any) => {
-              const selected = e.selected?.[0] || null;
-              onSelectionChange(selected);
-            };
-            canvas.on('selection:created', handleSelection);
-            canvas.on('selection:updated', handleSelection);
-            canvas.on('selection:cleared', () => onSelectionChange(null));
           }}
+          onObjectDelete={handleObjectDelete}
         />
       </div>
 

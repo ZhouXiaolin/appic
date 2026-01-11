@@ -370,7 +370,26 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   // 设置活动图层
   const setActiveLayer = useCallback((pageId: string, layerId: string | null) => {
     dispatch({ type: 'SET_ACTIVE_LAYER', payload: { pageId, layerId } });
-  }, []);
+
+    // 如果指定了图层，在 Canvas 中选中对应的对象
+    if (layerId) {
+      const currentPage = state.design?.pages.find(p => p.id === pageId);
+      if (!currentPage) return;
+
+      const layer = currentPage.layers.find(l => l.id === layerId);
+      if (!layer || !layer.fabricObjectId) return;
+
+      const canvas = state.canvasRefs.get(pageId);
+      if (!canvas) return;
+
+      // 在 Fabric canvas 中查找对应的对象并选中
+      const fabricObject = canvas.getObjects().find(obj => obj.id === layer.fabricObjectId);
+      if (fabricObject) {
+        canvas.setActiveObject(fabricObject);
+        canvas.requestRenderAll();
+      }
+    }
+  }, [state.design, state.canvasRefs]);
 
   // 切换图层可见性
   const toggleLayerVisibility = useCallback((pageId: string, layerId: string) => {

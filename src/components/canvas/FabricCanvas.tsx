@@ -12,6 +12,7 @@ interface FabricCanvasProps {
   width?: number;
   height?: number;
   onReady?: (canvas: Canvas) => void;
+  onObjectDelete?: (fabricObjectId: string) => void;
 }
 
 const PADDING = 64;
@@ -30,7 +31,7 @@ interface ScaleInfo {
   height: number;
 }
 
-export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanvasProps) {
+export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelete }: FabricCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasInnerWrapperRef = useRef<HTMLDivElement>(null);
   const { dispatch, canvasRef, setSelectedObject, clearSelection, state, setIsDragging } = useCanvas();
@@ -178,6 +179,41 @@ export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanva
     'object:added': () => saveHistory(),
     'object:removed': () => saveHistory(),
   });
+
+  // 键盘事件监听 - 删除选中对象
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 只响应 Delete 或 Backspace 键
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+
+      // 确保有活动的对象
+      const activeObject = canvasRef.current?.getActiveObject();
+      if (!activeObject) return;
+
+      // 获取对象的 fabricObjectId
+      const fabricObjectId = (activeObject as any).id;
+      if (!fabricObjectId) return;
+
+      // 从 canvas 中移除对象
+      canvasRef.current?.remove(activeObject);
+      canvasRef.current?.discardActiveObject();
+      canvasRef.current?.requestRenderAll();
+
+      // 清除选中状态
+      clearSelection();
+
+      // 保存历史
+      saveHistory();
+
+      // 通知父组件删除对应的图层
+      if (onObjectDelete) {
+        onObjectDelete(fabricObjectId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canvasRef, clearSelection, saveHistory, onObjectDelete]);
 
   return (
     <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-gray-100 relative">
