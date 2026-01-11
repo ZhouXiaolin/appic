@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Type, Image, Square, Circle, Maximize } from 'lucide-react';
 import { useCanvas } from '../../contexts/CanvasContext';
 import { createTextObject, createShapeObject, createImageObject } from '../../utils/fabric/objectFactory';
 import { CanvasObjectType } from '../../types/canvas.types';
 import { canvasPresets } from '../../constants/canvas';
+import type { CanvasObjectTypeValue } from '../../types/canvas.types';
 
 const componentItems = [
-  { id: 'text', type: CanvasObjectType.TEXT, label: '文本', icon: Type },
-  { id: 'image', type: CanvasObjectType.IMAGE, label: '图片', icon: Image },
-  { id: 'rectangle', type: CanvasObjectType.RECTANGLE, label: '矩形', icon: Square },
-  { id: 'circle', type: CanvasObjectType.CIRCLE, label: '圆形', icon: Circle },
+  { id: 'text', type: 'text' as const, label: '文本', icon: Type },
+  { id: 'image', type: 'image' as const, label: '图片', icon: Image },
+  { id: 'rectangle', type: 'rectangle' as const, label: '矩形', icon: Square },
+  { id: 'circle', type: 'circle' as const, label: '圆形', icon: Circle },
 ];
 
 const canvasSizePresets = [
@@ -26,7 +27,7 @@ export function ComponentList() {
   const [customHeight, setCustomHeight] = useState(state.config.height);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
-  const handleAddComponent = async (type: CanvasObjectType) => {
+  const handleAddComponent = async (type: CanvasObjectTypeValue) => {
     if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;

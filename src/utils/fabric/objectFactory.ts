@@ -54,7 +54,7 @@ export async function createImageObject(props: Partial<ImageObjectProps> & { max
       opacity: props.opacity !== undefined ? props.opacity : 1,
       originX: 'center',
       originY: 'center',
-    });
+    } as any);
 
     image.id = props.id || generateId();
 

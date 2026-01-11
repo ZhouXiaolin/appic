@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Canvas } from 'fabric';
 import { useCanvas } from '../../contexts/CanvasContext';
 import { useCanvasEvents } from '../../hooks/useCanvasEvents';
@@ -13,7 +13,7 @@ interface FabricCanvasProps {
 
 export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { state, dispatch, canvasRef, setSelectedObject, clearSelection } = useCanvas();
+  const { dispatch, canvasRef, setSelectedObject, clearSelection } = useCanvas();
 
   // 撤销/重做功能
   const { saveHistory } = useHistory(canvasRef.current);
@@ -26,7 +26,7 @@ export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanva
     containerRef.current.innerHTML = '';
 
     // 使用Fabric.js初始化canvas - 不传入元素，让Fabric.js自己创建
-    const canvas = new Canvas(null, {
+    const canvas = new Canvas(undefined, {
       width,
       height,
       backgroundColor: defaultCanvasConfig.backgroundColor,

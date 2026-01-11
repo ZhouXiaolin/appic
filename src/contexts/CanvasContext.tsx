@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useRef, useCallback } from 'react';
 import type { Canvas, Object as FabricObject } from 'fabric';
 import type { CanvasState, CanvasConfig } from '../types/canvas.types';
-import { defaultCanvasConfig, MAX_HISTORY_SIZE } from '../constants/canvas';
+import { defaultCanvasConfig } from '../constants/canvas';
 
 // Action 类型
 type CanvasAction =
@@ -83,7 +83,7 @@ interface CanvasContextValue {
 }
 
 // Context
-const CanvasContext = createContext<CanvasContextValue | undefined>(undefined);
+export const CanvasContext = createContext<CanvasContextValue | undefined>(undefined);
 
 // Provider
 export function CanvasProvider({ children }: { children: React.ReactNode }) {

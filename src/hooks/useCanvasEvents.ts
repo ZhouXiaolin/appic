@@ -17,13 +17,13 @@ export function useCanvasEvents(canvas: Canvas | null, events: CanvasEvents) {
 
     // 注册所有事件
     Object.entries(events).forEach(([eventName, handler]) => {
-      canvas.on(eventName, handler);
+      (canvas as any).on(eventName, handler);
     });
 
     // 清理函数：解绑所有事件
     return () => {
       Object.entries(events).forEach(([eventName, handler]) => {
-        canvas.off(eventName, handler);
+        (canvas as any).off(eventName, handler);
       });
     };
   }, [canvas, events]);

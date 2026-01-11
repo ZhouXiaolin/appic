@@ -1,14 +1,16 @@
 // Fabric.js 类型扩展
-import type { Canvas, Object as FabricObject, Rect, Circle, Text, Image } from 'fabric';
+import type { Canvas, Object as FabricObject } from 'fabric';
 
-// 画布对象类型枚举
-export enum CanvasObjectType {
-  TEXT = 'text',
-  IMAGE = 'image',
-  RECTANGLE = 'rectangle',
-  CIRCLE = 'circle',
-  TRIANGLE = 'triangle',
-}
+// 画布对象类型
+export const CanvasObjectType = {
+  TEXT: 'text',
+  IMAGE: 'image',
+  RECTANGLE: 'rectangle',
+  CIRCLE: 'circle',
+  TRIANGLE: 'triangle',
+} as const;
+
+export type CanvasObjectTypeValue = typeof CanvasObjectType[keyof typeof CanvasObjectType];
 
 // 画布配置
 export interface CanvasConfig {
@@ -21,7 +23,7 @@ export interface CanvasConfig {
 // 基础对象属性
 export interface BaseObjectProps {
   id?: string;
-  type: CanvasObjectType;
+  type: CanvasObjectTypeValue;
   x?: number;
   y?: number;
   width?: number;
@@ -38,7 +40,7 @@ export interface BaseObjectProps {
 
 // 文本对象属性
 export interface TextObjectProps extends BaseObjectProps {
-  type: CanvasObjectType.TEXT;
+  type: CanvasObjectTypeValue;
   text: string;
   fontSize?: number;
   fontFamily?: string;
@@ -49,7 +51,7 @@ export interface TextObjectProps extends BaseObjectProps {
 
 // 图片对象属性
 export interface ImageObjectProps extends BaseObjectProps {
-  type: CanvasObjectType.IMAGE;
+  type: CanvasObjectTypeValue;
   src: string;
 }
 

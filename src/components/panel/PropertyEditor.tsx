@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowLeft, Trash2, MoveUp, MoveDown } from 'lucide-react';
 import { useCanvas } from '../../contexts/CanvasContext';
 import { useHistory } from '../../hooks/useHistory';
@@ -39,14 +38,14 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
 
   const handleBringToFront = () => {
     if (!selectedObject || !canvasRef.current) return;
-    selectedObject.bringToFront();
+    (selectedObject as any).bringToFront();
     canvasRef.current.requestRenderAll();
     saveHistory();
   };
 
   const handleSendToBack = () => {
     if (!selectedObject || !canvasRef.current) return;
-    selectedObject.sendToBack();
+    (selectedObject as any).sendToBack();
     canvasRef.current.requestRenderAll();
     saveHistory();
   };

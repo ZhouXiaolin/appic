@@ -1,26 +1,49 @@
+import { useEffect, useState } from 'react';
+import { DesignProvider } from './contexts/DesignContext';
 import { CanvasProvider } from './contexts/CanvasContext';
 import { EditorLayout } from './components/layout/EditorLayout';
-import { ComponentPanel } from './components/panel/ComponentPanel';
-import { FabricCanvas } from './components/canvas/FabricCanvas';
-import { ExportPanel } from './components/panel/ExportPanel';
+import { LeftPanel } from './components/panel/LeftPanel';
+import { CanvasArea } from './components/canvas/CanvasArea';
+import { PropertyPanel } from './components/panel/PropertyPanel';
+import { useDesign } from './contexts/DesignContext';
+import type { Object as FabricObject } from 'fabric';
+
+function AppContent() {
+  const { createDesign, addPage } = useDesign();
+  const [selectedObject, setSelectedObject] = useState<FabricObject | null>(null);
+
+  // 初始化：创建默认设计和页面
+  useEffect(() => {
+    createDesign('我的设计');
+    // 稍后添加第一个页面，确保设计已创建
+    setTimeout(() => {
+      addPage({
+        name: '页面 1',
+        width: 800,
+        height: 600,
+        backgroundColor: '#ffffff',
+      });
+    }, 100);
+  }, [createDesign, addPage]);
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-50">
+      <EditorLayout
+        left={<LeftPanel />}
+        center={<CanvasArea onSelectionChange={setSelectedObject} />}
+        right={<PropertyPanel selectedObject={selectedObject} />}
+      />
+    </div>
+  );
+}
 
 function App() {
   return (
-    <CanvasProvider>
-      <div className="h-screen flex flex-col bg-gray-50">
-        {/* 顶部标题栏 */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
-          <h1 className="text-xl font-bold text-gray-800">Fabric.js 设计工具</h1>
-        </header>
-
-        {/* 主布局 */}
-        <EditorLayout
-          left={<ComponentPanel />}
-          center={<FabricCanvas width={800} height={600} />}
-          right={<ExportPanel />}
-        />
-      </div>
-    </CanvasProvider>
+    <DesignProvider>
+      <CanvasProvider>
+        <AppContent />
+      </CanvasProvider>
+    </DesignProvider>
   );
 }
 

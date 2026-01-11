@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useCanvas } from '../../contexts/CanvasContext';
 import { ComponentList } from './ComponentList';
 import { PropertyEditor } from './PropertyEditor';

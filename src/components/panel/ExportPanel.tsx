@@ -1,4 +1,3 @@
-import React from 'react';
 import { Download } from 'lucide-react';
 import { useCanvas } from '../../contexts/CanvasContext';
 import { exportCanvas } from '../../utils/fabric/exportUtils';
