@@ -93,6 +93,28 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
   const loadPageData = useDesignStore(state => state.loadPageData);
   const saveCurrentPageData = useDesignStore(state => state.saveCurrentPageData);
 
+  // 当 activePageId 变化时，加载新页面数据
+  useEffect(() => {
+    if (!design?.activePageId || !canvasRef.current) return;
+
+    const loadNewPageData = async () => {
+      await loadPageData(design.activePageId);
+    };
+
+    loadNewPageData();
+  }, [design?.activePageId, loadPageData]);
+
+  // 当画布尺寸变化时，更新 Canvas 尺寸
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.setDimensions({ width, height });
+      canvas.requestRenderAll();
+    }
+  }, [width, height]);
+
   // 初始化 Canvas
   useEffect(() => {
     if (!canvasInnerWrapperRef.current || canvasRef.current) return;

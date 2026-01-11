@@ -492,10 +492,17 @@ export const useDesignStore = create<DesignState>()(
 
       // Load page canvas data from IndexedDB
       loadPageData: async (pageId: string) => {
-        const { design, canvasRefs } = get();
+        const { design, canvasRefs, activePageId } = get();
         if (!design) return;
 
-        const canvas = canvasRefs.get(pageId);
+        // Try to get canvas for the specific page
+        let canvas = canvasRefs.get(pageId);
+
+        // If not found, try to get the active page's canvas (for page switching scenario)
+        if (!canvas && activePageId) {
+          canvas = canvasRefs.get(activePageId);
+        }
+
         if (!canvas) return;
 
         const canvasJSON = await getPageData(design.id, pageId);
