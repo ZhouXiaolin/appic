@@ -66,6 +66,7 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
           y: centerY,
         });
 
+    // 新对象添加到画布最顶层，方便用户立即看到和操作
     canvas.add(object);
     canvas.setActiveObject(object);
     canvas.requestRenderAll();
@@ -113,6 +114,7 @@ export function CanvasArea({ onSelectionChange }: CanvasAreaProps) {
             maxHeight,
           });
 
+          // 新对象添加到画布最顶层，方便用户立即看到和操作
           canvas.add(imageObj);
           canvas.setActiveObject(imageObj);
           canvas.requestRenderAll();

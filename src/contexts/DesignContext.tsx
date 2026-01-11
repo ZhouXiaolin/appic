@@ -22,6 +22,7 @@ type DesignAction =
   | { type: 'SET_ACTIVE_LAYER'; payload: { pageId: string; layerId: string | null } }
   | { type: 'TOGGLE_LAYER_VISIBILITY'; payload: { pageId: string; layerId: string } }
   | { type: 'TOGGLE_LAYER_LOCK'; payload: { pageId: string; layerId: string } }
+  | { type: 'REORDER_LAYERS'; payload: { pageId: string; oldIndex: number; newIndex: number } }
   | { type: 'SET_CANVAS_REF'; payload: { pageId: string; canvas: Canvas | null } };
 
 // 状态
@@ -248,6 +249,23 @@ function designReducer(state: DesignState, action: DesignAction): DesignState {
       };
     }
 
+    case 'REORDER_LAYERS': {
+      if (!design) return state;
+      return {
+        ...state,
+        design: {
+          ...design,
+          pages: updatePage(design.pages, action.payload.pageId, page => {
+            const layers = [...page.layers];
+            const [movedLayer] = layers.splice(action.payload.oldIndex, 1);
+            layers.splice(action.payload.newIndex, 0, movedLayer);
+            return { ...page, layers, updatedAt: Date.now() };
+          }),
+          updatedAt: Date.now(),
+        },
+      };
+    }
+
     case 'SET_CANVAS_REF': {
       const newCanvasRefs = new Map(state.canvasRefs);
       newCanvasRefs.set(action.payload.pageId, action.payload.canvas);
@@ -281,6 +299,7 @@ interface DesignContextValue {
   setActiveLayer: (pageId: string, layerId: string | null) => void;
   toggleLayerVisibility: (pageId: string, layerId: string) => void;
   toggleLayerLock: (pageId: string, layerId: string) => void;
+  reorderLayers: (pageId: string, oldIndex: number, newIndex: number) => void;
 
   getActivePage: () => Page | null;
   getActiveLayer: () => Layer | null;
@@ -441,6 +460,36 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_CANVAS_REF', payload: { pageId, canvas } });
   }, []);
 
+  // 重新排序图层
+  const reorderLayers = useCallback((pageId: string, oldIndex: number, newIndex: number) => {
+    // 获取当前页面
+    const currentPage = state.design?.pages.find(p => p.id === pageId);
+    if (!currentPage) return;
+
+    // 找到被移动的图层
+    const movedLayer = currentPage.layers[oldIndex];
+    if (!movedLayer || !movedLayer.fabricObjectId) return;
+
+    // 先更新状态
+    dispatch({ type: 'REORDER_LAYERS', payload: { pageId, oldIndex, newIndex } });
+
+    // 然后同步更新 Fabric Canvas 中的对象层级
+    const canvas = state.canvasRefs.get(pageId);
+    if (!canvas) return;
+
+    // 在 Fabric canvas 中查找对应的对象
+    const fabricObject = canvas.getObjects().find(obj => obj.id === movedLayer.fabricObjectId);
+    if (!fabricObject) return;
+
+    // 使用 canvas.add() 和 addLayer() 添加时，两者顺序一致：
+    // - layers 列表：[A, B, C]，A 是先添加的（index 0，列表顶部）
+    // - canvas 对象：[A, B, C]，A 是 index 0（最底层）
+    // - 映射关系：layerIndex 和 canvasIndex 相同，直接使用
+    // 列表顶部 = 底层图层，列表底部 = 顶层图层（常见设计软件行为）
+    canvas.moveObjectTo(fabricObject, newIndex);
+    canvas.requestRenderAll();
+  }, [state.design, state.canvasRefs]);
+
   const value: DesignContextValue = {
     state,
     dispatch,
@@ -456,6 +505,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     setActiveLayer,
     toggleLayerVisibility,
     toggleLayerLock,
+    reorderLayers,
     getActivePage,
     getActiveLayer,
     getCanvas,
