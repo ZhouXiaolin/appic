@@ -33,7 +33,7 @@ interface ScaleInfo {
 export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasInnerWrapperRef = useRef<HTMLDivElement>(null);
-  const { dispatch, canvasRef, setSelectedObject, clearSelection, state } = useCanvas();
+  const { dispatch, canvasRef, setSelectedObject, clearSelection, state, setIsDragging } = useCanvas();
   const [scaleInfo, setScaleInfo] = useState<ScaleInfo>({ scale: 1, width, height });
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -157,7 +157,28 @@ export function FabricCanvas({ width = 800, height = 600, onReady }: FabricCanva
     'selection:cleared': () => {
       clearSelection();
     },
-    'object:modified': () => saveHistory(),
+    'mouse:dblclick': (e) => {
+      const target = e.target;
+      if (target) {
+        setSelectedObject(target);
+      }
+    },
+    'object:moving': () => {
+      setIsDragging(true);
+    },
+    'object:scaling': () => {
+      setIsDragging(true);
+    },
+    'object:rotating': () => {
+      setIsDragging(true);
+    },
+    'object:modified': () => {
+      setIsDragging(false);
+      saveHistory();
+    },
+    'mouse:up': () => {
+      setIsDragging(false);
+    },
     'object:added': () => saveHistory(),
     'object:removed': () => saveHistory(),
   });

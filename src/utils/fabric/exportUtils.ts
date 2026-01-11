@@ -1,5 +1,5 @@
 import type { Canvas } from 'fabric';
-import type { ExportOptions, ExportFormat } from '../../types/canvas.types';
+import type { ExportFormat } from '../../types/canvas.types';
 
 const MULTIPLIER = 1;
 

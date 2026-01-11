@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useRef, useCallback, useState } from 'react';
 import type { Canvas, Object as FabricObject } from 'fabric';
 import type { CanvasState, CanvasConfig } from '../types/canvas.types';
 import { defaultCanvasConfig } from '../constants/canvas';
@@ -77,6 +77,8 @@ interface CanvasContextValue {
   dispatch: React.Dispatch<CanvasAction>;
   canvasRef: React.MutableRefObject<Canvas | null>;
   selectedObject: FabricObject | null;
+  isDragging: boolean;
+  setIsDragging: (dragging: boolean) => void;
   setSelectedObject: (obj: FabricObject | null) => void;
   clearSelection: () => void;
   updateCanvasSize: (width: number, height: number) => void;
@@ -89,6 +91,7 @@ export const CanvasContext = createContext<CanvasContextValue | undefined>(undef
 export function CanvasProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(canvasReducer, initialState);
   const canvasRef = useRef<Canvas | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const setSelectedObject = useCallback((obj: FabricObject | null) => {
     if (obj) {
@@ -124,6 +127,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
     dispatch,
     canvasRef,
     selectedObject: state.selection.activeObject,
+    isDragging,
+    setIsDragging,
     setSelectedObject,
     clearSelection,
     updateCanvasSize,

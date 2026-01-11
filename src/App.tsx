@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DesignProvider } from './contexts/DesignContext';
-import { CanvasProvider } from './contexts/CanvasContext';
+import { CanvasProvider, useCanvas } from './contexts/CanvasContext';
 import { EditorLayout } from './components/layout/EditorLayout';
 import { LeftPanel } from './components/panel/LeftPanel';
 import { CanvasArea } from './components/canvas/CanvasArea';
@@ -10,6 +10,7 @@ import type { Object as FabricObject } from 'fabric';
 
 function AppContent() {
   const { createDesign } = useDesign();
+  const { isDragging } = useCanvas();
   const [selectedObject, setSelectedObject] = useState<FabricObject | null>(null);
   const [updateKey, setUpdateKey] = useState(0);
 
@@ -28,7 +29,7 @@ function AppContent() {
       <EditorLayout
         left={<LeftPanel />}
         center={<CanvasArea onSelectionChange={setSelectedObject} onObjectModified={handleObjectModified} />}
-        right={<PropertyPanel key={updateKey} selectedObject={selectedObject} />}
+        right={<PropertyPanel key={updateKey} selectedObject={selectedObject} isDragging={isDragging} />}
       />
     </div>
   );

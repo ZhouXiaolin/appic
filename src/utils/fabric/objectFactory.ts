@@ -1,4 +1,4 @@
-import { Rect, Circle, Text, Image } from 'fabric';
+import { Rect, Circle, Textbox, Image } from 'fabric';
 import { CanvasObjectType } from '../../types/canvas.types';
 import type { TextObjectProps, ImageObjectProps, BaseObjectProps } from '../../types/canvas.types';
 import { objectDefaults } from '../../constants/canvas';
@@ -13,11 +13,12 @@ function generateId(): string {
 /**
  * 创建文本对象
  */
-export function createTextObject(props: Partial<TextObjectProps> = {}): Text {
+export function createTextObject(props: Partial<TextObjectProps> = {}): Textbox {
   const defaults = objectDefaults.text;
-  const text = new Text(props.text || defaults.text, {
+  const text = new Textbox(props.text || defaults.text, {
     left: props.x || 100,
     top: props.y || 100,
+    width: props.width || 200, // 设置文本框宽度
     fontSize: props.fontSize || defaults.fontSize,
     fontFamily: props.fontFamily || defaults.fontFamily,
     fontWeight: props.fontWeight || defaults.fontWeight,
@@ -27,6 +28,7 @@ export function createTextObject(props: Partial<TextObjectProps> = {}): Text {
     opacity: props.opacity !== undefined ? props.opacity : 1,
     originX: 'center',
     originY: 'center',
+    splitByGrapheme: true, // 支持更好的换行
   });
 
   text.id = props.id || generateId();

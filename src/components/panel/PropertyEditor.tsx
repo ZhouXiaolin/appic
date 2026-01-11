@@ -51,7 +51,7 @@ export function PropertyEditor({ onBack }: PropertyEditorProps) {
   };
 
   // 文本对象特有属性
-  const isText = selectedObject.type === 'text';
+  const isText = selectedObject.type === 'textbox';
 
   return (
     <div className="space-y-4">
