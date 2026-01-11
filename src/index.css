@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+/* 禁止移动端橡皮筋效果和页面滚动 */
+html, body {
+  overscroll-behavior: none;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 在画布区域完全禁止触摸滚动 */
+canvas {
+  touch-action: none;
+}

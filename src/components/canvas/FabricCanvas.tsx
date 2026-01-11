@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas } from 'fabric';
 import { Download } from 'lucide-react';
 import { useCanvas } from '../../contexts/CanvasContext';
@@ -154,6 +154,111 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 阻止文本编辑时的页面滚动
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+
+    // 保存当前滚动位置
+    let scrollY = 0;
+    let isEditing = false;
+    let rafId: number | null = null;
+    let scrollInterval: number | null = null;
+
+    // 恢复滚动位置的函数
+    const restoreScrollPosition = () => {
+      if (window.scrollY !== scrollY) {
+        window.scrollTo(0, scrollY);
+      }
+    };
+
+    // 监听所有滚动事件
+    const handleScroll = () => {
+      if (isEditing && window.scrollY !== scrollY) {
+        // 立即恢复滚动位置
+        window.scrollTo(0, scrollY);
+      }
+    };
+
+    // 使用捕获阶段监听滚动，确保优先处理
+    window.addEventListener('scroll', handleScroll, true);
+
+    // 开始持续恢复滚动位置
+    const startRestoreScroll = () => {
+      scrollY = window.scrollY;
+      isEditing = true;
+      console.log('[文本编辑] 保存滚动位置:', scrollY);
+
+      // 设置文档样式防止滚动
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+
+      // 立即执行一次恢复
+      restoreScrollPosition();
+
+      // 使用 setInterval 持续恢复（比 requestAnimationFrame 更可靠）
+      scrollInterval = window.setInterval(() => {
+        restoreScrollPosition();
+      }, 16); // ~60fps
+    };
+
+    // 停止恢复滚动位置
+    const stopRestoreScroll = () => {
+      if (!isEditing) return;
+      isEditing = false;
+      console.log('[文本编辑] 恢复正常滚动');
+
+      // 恢复文档样式
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehavior = '';
+
+      if (scrollInterval !== null) {
+        clearInterval(scrollInterval);
+        scrollInterval = null;
+      }
+
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    };
+
+    // 监听双击文本事件（在 editing:entered 之前触发）
+    const handleTextDoubleClick = () => {
+      console.log('[FabricCanvas] 检测到文本双击，提前锁定滚动');
+      startRestoreScroll();
+    };
+
+    // 监听 Fabric.js 的编辑事件
+    const handleEditingEntered = () => {
+      console.log('[FabricCanvas] editing:entered 事件触发');
+      // 如果还没有开始保护（可能是直接进入编辑而没有双击），现在开始
+      if (!isEditing) {
+        startRestoreScroll();
+      }
+    };
+
+    const handleEditingExited = () => {
+      console.log('[FabricCanvas] editing:exited 事件触发');
+      stopRestoreScroll();
+    };
+
+    // 注册事件监听
+    window.addEventListener('fabric-text-double-click', handleTextDoubleClick);
+    (canvas as any).on('editing:entered', handleEditingEntered);
+    (canvas as any).on('editing:exited', handleEditingExited);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('fabric-text-double-click', handleTextDoubleClick);
+      (canvas as any).off('editing:entered', handleEditingEntered);
+      (canvas as any).off('editing:exited', handleEditingExited);
+      stopRestoreScroll();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Save page data before browser close
   useEffect(() => {
     if (!design?.activePageId) return;
@@ -205,16 +310,22 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
     saveCurrentPageData();
   }, [saveHistory, saveCurrentPageData]);
 
-  // 监听 Canvas 事件
-  useCanvasEvents(canvasRef.current, {
-    'selection:created': (e) => handleSelectionChange(e.selected?.[0]),
-    'selection:updated': (e) => handleSelectionChange(e.selected?.[0]),
+  // Canvas 事件处理器 - 使用 useMemo 稳定引用
+  const canvasEvents = useMemo(() => ({
+    'selection:created': (e: any) => handleSelectionChange(e.selected?.[0]),
+    'selection:updated': (e: any) => handleSelectionChange(e.selected?.[0]),
     'selection:cleared': () => {
       clearSelection();
       onObjectSelect?.(null);
     },
-    'mouse:dblclick': (e) => {
-      if (e.target) setSelectedObject(e.target);
+    'mouse:dblclick': (e: any) => {
+      if (e.target) {
+        setSelectedObject(e.target);
+        // 双击文本对象时，立即开始保护滚动（在 Fabric.js 创建 textarea 之前）
+        if ((e.target as any).type === 'textbox' || (e.target as any).type === 'text') {
+          window.dispatchEvent(new CustomEvent('fabric-text-double-click'));
+        }
+      }
     },
     'object:moving': () => setIsDragging(true),
     'object:scaling': () => setIsDragging(true),
@@ -226,7 +337,10 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
     'mouse:up': () => setIsDragging(false),
     'object:added': handleHistorySave,
     'object:removed': handleHistorySave,
-  });
+  }), [handleSelectionChange, clearSelection, onObjectSelect, setSelectedObject, setIsDragging, handleHistorySave]);
+
+  // 监听 Canvas 事件
+  useCanvasEvents(canvasRef.current, canvasEvents);
 
   // 键盘事件监听 - 删除选中对象
   useEffect(() => {
@@ -255,11 +369,14 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
   }, [canvasRef, clearSelection, saveHistory, saveCurrentPageData, onObjectDelete]);
 
   return (
-    <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-gray-100 relative">
+    <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-gray-100 relative"
+         style={{ touchAction: 'none', overscrollBehavior: 'none' }}>
       <div
         style={{
           width: width * scaleInfo.scale,
           height: height * scaleInfo.scale,
+          touchAction: 'none',
+          overscrollBehavior: 'none',
         }}
         className="flex items-center justify-center"
       >
@@ -271,6 +388,8 @@ export function FabricCanvas({ width = 800, height = 600, onReady, onObjectDelet
             height,
             transform: `scale(${scaleInfo.scale})`,
             transformOrigin: 'center center',
+            touchAction: 'none',
+            overscrollBehavior: 'none',
           }}
         />
       </div>
