@@ -61,8 +61,5 @@ export function generateId(prefix: string = ''): string {
 
 // 格式化尺寸显示
 export function formatSize(width: number, height: number): string {
-  if (width >= 1000) {
-    return `${(width / 1000).toFixed(1)}k × ${(height / 1000).toFixed(1)}k`;
-  }
   return `${width} × ${height}`;
 }

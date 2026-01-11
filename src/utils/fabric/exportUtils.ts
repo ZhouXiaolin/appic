@@ -1,7 +1,7 @@
 import type { Canvas } from 'fabric';
 import type { ExportOptions, ExportFormat } from '../../types/canvas.types';
 
-const MULTIPLIER = 2;
+const MULTIPLIER = 1;
 
 // 导出格式配置
 const EXPORT_CONFIG = {
