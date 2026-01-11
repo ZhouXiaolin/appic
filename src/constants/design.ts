@@ -42,8 +42,13 @@ export const ADD_SIZE_MENU_OPTIONS: SizeMenuOption[] = [
 export const TOOLBAR_ITEMS: ToolbarItem[] = [
   { id: 'image', type: 'image', label: '图片', icon: 'Image', description: '添加图片到画布' },
   { id: 'text', type: 'text', label: '文字', icon: 'Type', description: '添加文本到画布' },
-  { id: 'rectangle', type: 'rectangle', label: '矩形', icon: 'Square', description: '添加矩形到画布' },
-  { id: 'circle', type: 'circle', label: '圆形', icon: 'Circle', description: '添加圆形到画布' },
+  { id: 'shape', type: 'rectangle', label: '形状', icon: 'Square', description: '添加形状到画布' },
+];
+
+// 形状选项（用于下拉菜单）
+export const SHAPE_OPTIONS: Array<{ type: 'rectangle' | 'circle' | 'triangle'; label: string; icon: string }> = [
+  { type: 'rectangle', label: '矩形', icon: 'Square' },
+  { type: 'circle', label: '圆形', icon: 'Circle' },
 ];
 
 // 默认设计名称
